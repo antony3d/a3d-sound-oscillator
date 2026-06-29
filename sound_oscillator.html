@@ -1,0 +1,664 @@
+<html>
+<head>
+    <title>A3d Oscillator v0.1.3</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #554433;
+            color: #eee;
+            padding: 20px;
+            max-width: 820px;
+            margin: 0 auto;
+        }
+        .container {
+            background: #3d3228;
+            padding: 18px;
+            border-radius: 12px;
+            position: relative;
+        }
+        .lang-switch {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 13px;
+            color: #ee9933;
+            cursor: pointer;
+            user-select: none;
+        }
+        .lang-switch span {
+            padding: 0 4px;
+        }
+        .lang-switch .active {
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .lang-switch .inactive {
+            color: #887766;
+        }
+        .lang-switch .inactive:hover {
+            color: #ee9933;
+        }
+        h2 {
+            color: #ee9933;
+            margin-top: 0;
+            text-align: center;
+            font-size: 20px;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin: 12px 0;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #4a3a2e;
+            padding: 6px 15px;
+            border-radius: 8px;
+            gap: 10px;
+        }
+        .control-group label {
+            font-weight: bold;
+            color: #ee9933;
+            min-width: 150px;
+            font-size: 13px;
+        }
+        .control-group input[type="range"] {
+            flex: 1;
+            margin: 0 8px;
+            accent-color: #ee9933;
+            cursor: pointer;
+            height: 4px;
+        }
+        .control-group input[type="text"] {
+            width: 60px;
+            background: #2a1f16;
+            border: 1px solid #ee9933;
+            color: #eee;
+            padding: 3px 5px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .control-group input[type="text"]:focus {
+            outline: 2px solid #ee9933;
+        }
+        .control-group .value {
+            min-width: 45px;
+            text-align: right;
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .harmonics {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 15px;
+            background: #4a3a2e;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+        .harmonics input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #ee9933;
+            cursor: pointer;
+        }
+        .harmonics label {
+            color: #ee9933;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .harmonics .h-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .harmonics .h-group input[type="range"] {
+            width: 60px;
+            accent-color: #ee9933;
+            cursor: pointer;
+        }
+        .harmonics .h-group input[type="text"] {
+            width: 35px;
+            background: #2a1f16;
+            border: 1px solid #ee9933;
+            color: #eee;
+            padding: 2px 4px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 11px;
+        }
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin: 8px 0;
+        }
+        .button-row button {
+            flex: 1;
+            padding: 12px 20px;
+            font-size: 17px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .button-row button:hover {
+            transform: scale(1.02);
+        }
+        .button-row button:active {
+            transform: scale(0.98);
+        }
+        .btn-start {
+            background: linear-gradient(135deg, #ee9933, #cc5500);
+            color: white;
+        }
+        .btn-start:hover {
+            box-shadow: 0 4px 25px rgba(238, 119, 17, 0.4);
+        }
+        .btn-stop {
+            background: linear-gradient(135deg, #cc3333, #991111);
+            color: white;
+        }
+        .btn-stop:hover {
+            box-shadow: 0 4px 25px rgba(204, 51, 51, 0.4);
+        }
+        .output {
+            background: #10200e;
+            border: 1px solid #5a4a3e;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 12px 0;
+            min-height: 60px;
+            font-family: 'Consolas', monospace;
+            color: #00ff88;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .status {
+            color: #ee9933;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .dual {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .dual .control-group {
+            flex: 1;
+            min-width: 230px;
+        }
+        .full-width .control-group {
+            flex: 1 1 100%;
+        }
+        .version {
+            color: #887766;
+            font-size: 12px;
+            text-align: right;
+            margin-top: 4px;
+        }
+        .lang-active {
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .lang-inactive {
+            color: #887766;
+            cursor: pointer;
+        }
+        .lang-inactive:hover {
+            color: #ee9933;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="lang-switch">
+            <span id="langEng" class="lang-active" onclick="setLang('eng')">ENG</span>
+            <span>|</span>
+            <span id="langRus" class="lang-inactive" onclick="setLang('rus')">RUS</span>
+        </div>
+        <h2 id="title">A3d Oscillator</h2>
+        
+        <div class="controls">
+            <!-- Carrier frequency -->
+            <div class="control-group full-width">
+                <label id="lblCarrier">Carrier freq (Hz)</label>
+                <input type="range" id="carrierFreq" min="20" max="18000" value="250" step="1">
+                <input type="text" id="carrierFreqInput" value="250">
+                <span class="value" id="carrierFreqVal">250</span>
+            </div>
+
+            <!-- OSC-1: Amplitude modulation -->
+            <div class="control-group">
+                <label id="lblMod1">OSC-1 (AM) Hz</label>
+                <input type="range" id="modFreq1" min="0.1" max="500" value="5" step="0.1">
+                <input type="text" id="modFreq1Input" value="5.0">
+                <span class="value" id="modFreq1Val">5.0</span>
+            </div>
+
+            <!-- OSC-2: Frequency modulation -->
+            <div class="control-group">
+                <label id="lblMod2">OSC-2 (FM) Hz</label>
+                <input type="range" id="modFreq2" min="0.1" max="1000" value="5" step="0.1">
+                <input type="text" id="modFreq2Input" value="5.0">
+                <span class="value" id="modFreq2Val">5.0</span>
+            </div>
+            
+            <div class="control-group">
+                <label id="lblDepth">AM depth</label>
+                <input type="range" id="depth" min="0" max="100" value="50" step="1">
+                <input type="text" id="depthInput" value="50">
+                <span class="value" id="depthVal">50%</span>
+            </div>
+
+            <div class="control-group">
+                <label id="lblFmDepth">FM depth (Hz)</label>
+                <input type="range" id="fmDepth" min="0" max="2000" value="100" step="1">
+                <input type="text" id="fmDepthInput" value="100">
+                <span class="value" id="fmDepthVal">100</span>
+            </div>
+            
+            <div class="control-group">
+                <label id="lblDuration">Duration (sec)</label>
+                <input type="range" id="duration" min="0.5" max="60" value="5" step="0.5">
+                <input type="text" id="durationInput" value="5">
+                <span class="value" id="durationVal">5.0 sec</span>
+            </div>
+            
+            <div class="harmonics">
+                <div class="h-group">
+                    <input type="checkbox" id="harmonics2Check">
+                    <label id="lblHarm2"><b>Harmonics:</b> 2nd</label>
+                    <input type="range" id="harmonics2Gain" min="0" max="100" value="10" step="1">
+                    <input type="text" id="harmonics2GainInput" value="10">
+                    <span class="value" id="harmonics2GainVal">10%</span>
+                </div>
+                <div class="h-group">
+                    <input type="checkbox" id="harmonics3Check">
+                    <label id="lblHarm3">3rd</label>
+                    <input type="range" id="harmonics3Gain" min="0" max="100" value="5" step="1">
+                    <input type="text" id="harmonics3GainInput" value="5">
+                    <span class="value" id="harmonics3GainVal">5%</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="button-row">
+            <button id="btnStart" class="btn-start" onclick="startAM()">Start modulation</button>
+            <button id="btnStop" class="btn-stop" onclick="stopAllSounds()">Stop all sounds</button>
+        </div>
+        
+        <div class="output" id="output">Ready</div>
+        <div class="status" id="status">Waiting</div>
+        <div class="version">A3d Oscillator v0.1.3</div>
+    </div>
+
+    <script>
+        // === CONSTANTS ===
+        const VERSION = '0.1.3';
+        const NAME = 'A3d Oscillator';
+        const CONFIG = {
+            DEFAULT_CARRIER: 300,
+            DEFAULT_MOD1: 3,
+            DEFAULT_MOD2: 30,
+            DEFAULT_DEPTH: 70,
+            DEFAULT_FM_DEPTH: 600,
+            DEFAULT_HARMONIC2_GAIN: 3,
+            DEFAULT_HARMONIC3_GAIN: 2,
+            DEFAULT_DURATION: 3,
+            MIN_CARRIER: 20,
+            MAX_CARRIER: 18000,
+            MIN_MOD: 0.1,
+            MAX_MOD: 500
+        };
+
+        // === LANGUAGE STRINGS ===
+        const LANG = {
+            eng: {
+                title: 'A3d Oscillator',
+                carrier: 'Carrier freq (Hz)',
+                mod1: 'OSC-1 (AM) Hz',
+                mod2: 'OSC-2 (FM) Hz',
+                depth: 'AM depth',
+                fmDepth: 'FM depth (Hz)',
+                duration: 'Duration (sec)',
+                harm2: 'Harmonics: 2nd',
+                harm3: '3rd',
+                btn: 'Start modulation',
+                btnStop: 'Stop all sounds',
+                output: 'Ready',
+                status: 'Waiting',
+                running: 'Sound playing... stops in %s sec',
+                stopped: 'Stopped by user',
+                done: 'Done',
+                carrierOut: 'Carrier: %s Hz',
+                amOut: 'OSC-1 (AM): %s Hz, depth %s%%',
+                fmOut: 'OSC-2 (FM): %s Hz, depth %s Hz',
+                durationOut: 'Duration: %s sec',
+                harmonicsOut: 'Harmonics: %s',
+                noHarmonics: 'none'
+            },
+            rus: {
+                title: 'A3d Oscillator',
+                carrier: 'Несущая частота (Гц)',
+                mod1: 'ОСЦ-1 (AM) Гц',
+                mod2: 'ОСЦ-2 (FM) Гц',
+                depth: 'Глубина AM',
+                fmDepth: 'Глубина FM (Гц)',
+                duration: 'Длительность (сек)',
+                harm2: 'Гармоники: 2-я',
+                harm3: '3-я',
+                btn: 'Старт модуляции',
+                btnStop: 'Остановить всё',
+                output: 'Готов',
+                status: 'Ожидание',
+                running: 'Звук воспроизводится... остановится через %s сек',
+                stopped: 'Остановлено пользователем',
+                done: 'Закончено',
+                carrierOut: 'Несущая: %s Гц',
+                amOut: 'ОСЦ-1 (AM): %s Гц, глубина %s%%',
+                fmOut: 'ОСЦ-2 (FM): %s Гц, глубина %s Гц',
+                durationOut: 'Длительность: %s сек',
+                harmonicsOut: 'Гармоники: %s',
+                noHarmonics: 'нет'
+            }
+        };
+
+        let currentLang = 'eng';
+        let audioContext = null;
+        let activeOscillators = [];
+
+        // === LANGUAGE SWITCH ===
+        function setLang(lang) {
+            currentLang = lang;
+            document.getElementById('langEng').className = lang === 'eng' ? 'lang-active' : 'lang-inactive';
+            document.getElementById('langRus').className = lang === 'rus' ? 'lang-active' : 'lang-inactive';
+            updateLabels();
+            updateOutput();
+        }
+
+        function t(key) {
+            return LANG[currentLang][key] || key;
+        }
+
+        function updateLabels() {
+            document.getElementById('title').textContent = t('title');
+            document.getElementById('lblCarrier').textContent = t('carrier');
+            document.getElementById('lblMod1').textContent = t('mod1');
+            document.getElementById('lblMod2').textContent = t('mod2');
+            document.getElementById('lblDepth').textContent = t('depth');
+            document.getElementById('lblFmDepth').textContent = t('fmDepth');
+            document.getElementById('lblDuration').textContent = t('duration');
+            document.getElementById('lblHarm2').textContent = t('harm2');
+            document.getElementById('lblHarm3').textContent = t('harm3');
+            document.getElementById('btnStart').textContent = t('btn');
+            document.getElementById('btnStop').textContent = t('btnStop');
+            document.getElementById('status').textContent = t('status');
+        }
+
+        function updateOutput() {
+            let output = document.getElementById('output');
+            if (output.textContent === 'Ready' || output.textContent === 'Готов') {
+                output.textContent = t('output');
+            }
+        }
+
+        // === STOP ALL SOUNDS ===
+        function stopAllSounds() {
+            if (audioContext && audioContext.state === 'running') {
+                // Close all active oscillators
+                for (let osc of activeOscillators) {
+                    try { osc.stop(); } catch(e) {}
+                    try { osc.disconnect(); } catch(e) {}
+                }
+                activeOscillators = [];
+                
+                // Close and recreate audio context
+                audioContext.close();
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                document.getElementById('status').textContent = t('stopped');
+                let output = document.getElementById('output');
+                if (!output.textContent.includes('Stopped') && !output.textContent.includes('Остановлено')) {
+                    output.textContent = output.textContent + '\n' + '--- ' + t('stopped') + ' ---';
+                }
+            } else {
+                document.getElementById('status').textContent = t('status');
+            }
+        }
+
+        // === SET DEFAULTS ===
+        function setDefault(id, value) {
+            let el = document.getElementById(id);
+            if (el) el.value = value;
+        }
+
+        setDefault('carrierFreq', CONFIG.DEFAULT_CARRIER);
+        setDefault('carrierFreqInput', CONFIG.DEFAULT_CARRIER);
+        document.getElementById('carrierFreqVal').textContent = CONFIG.DEFAULT_CARRIER;
+
+        setDefault('modFreq1', CONFIG.DEFAULT_MOD1);
+        setDefault('modFreq1Input', CONFIG.DEFAULT_MOD1);
+        document.getElementById('modFreq1Val').textContent = CONFIG.DEFAULT_MOD1;
+
+        setDefault('modFreq2', CONFIG.DEFAULT_MOD2);
+        setDefault('modFreq2Input', CONFIG.DEFAULT_MOD2);
+        document.getElementById('modFreq2Val').textContent = CONFIG.DEFAULT_MOD2;
+
+        setDefault('depth', CONFIG.DEFAULT_DEPTH);
+        setDefault('depthInput', CONFIG.DEFAULT_DEPTH);
+        document.getElementById('depthVal').textContent = CONFIG.DEFAULT_DEPTH + '%';
+
+        setDefault('fmDepth', CONFIG.DEFAULT_FM_DEPTH);
+        setDefault('fmDepthInput', CONFIG.DEFAULT_FM_DEPTH);
+        document.getElementById('fmDepthVal').textContent = CONFIG.DEFAULT_FM_DEPTH;
+
+        setDefault('duration', CONFIG.DEFAULT_DURATION);
+        setDefault('durationInput', CONFIG.DEFAULT_DURATION);
+        document.getElementById('durationVal').textContent = CONFIG.DEFAULT_DURATION.toFixed(1) + ' sec';
+
+        setDefault('harmonics2Gain', CONFIG.DEFAULT_HARMONIC2_GAIN);
+        setDefault('harmonics2GainInput', CONFIG.DEFAULT_HARMONIC2_GAIN);
+        document.getElementById('harmonics2GainVal').textContent = CONFIG.DEFAULT_HARMONIC2_GAIN + '%';
+
+        setDefault('harmonics3Gain', CONFIG.DEFAULT_HARMONIC3_GAIN);
+        setDefault('harmonics3GainInput', CONFIG.DEFAULT_HARMONIC3_GAIN);
+        document.getElementById('harmonics3GainVal').textContent = CONFIG.DEFAULT_HARMONIC3_GAIN + '%';
+
+        // === SLIDER SETUP ===
+        function setupSlider(inputId, inputIdText, valId, updateFn, fromInputFn) {
+            let slider = document.getElementById(inputId);
+            let input = document.getElementById(inputIdText);
+            let val = document.getElementById(valId);
+            
+            slider.addEventListener('input', function() {
+                input.value = this.value;
+                if (val) val.textContent = this.value;
+                if (updateFn) updateFn(this.value);
+            });
+            
+            if (input) {
+                input.addEventListener('change', function() {
+                    let v = parseFloat(this.value);
+                    if (isNaN(v)) {
+                        this.style.borderColor = 'red';
+                        return;
+                    }
+                    this.style.borderColor = '#ee9933';
+                    slider.value = v;
+                    if (val) val.textContent = v;
+                    if (fromInputFn) fromInputFn(v);
+                });
+            }
+        }
+
+        function setupSliderPercent(inputId, inputIdText, valId, updateFn, fromInputFn) {
+            let slider = document.getElementById(inputId);
+            let input = document.getElementById(inputIdText);
+            let val = document.getElementById(valId);
+            
+            slider.addEventListener('input', function() {
+                input.value = this.value;
+                if (val) val.textContent = this.value + '%';
+                if (updateFn) updateFn(this.value);
+            });
+            
+            if (input) {
+                input.addEventListener('change', function() {
+                    let v = parseFloat(this.value);
+                    if (isNaN(v) || v < 0 || v > 100) {
+                        this.style.borderColor = 'red';
+                        return;
+                    }
+                    this.style.borderColor = '#ee9933';
+                    slider.value = v;
+                    if (val) val.textContent = v + '%';
+                    if (fromInputFn) fromInputFn(v);
+                });
+            }
+        }
+
+        // === INIT ===
+        setupSlider('carrierFreq', 'carrierFreqInput', 'carrierFreqVal');
+        setupSlider('modFreq1', 'modFreq1Input', 'modFreq1Val');
+        setupSlider('modFreq2', 'modFreq2Input', 'modFreq2Val');
+        setupSlider('depth', 'depthInput', 'depthVal');
+        setupSlider('fmDepth', 'fmDepthInput', 'fmDepthVal');
+        setupSlider('duration', 'durationInput', 'durationVal');
+        setupSliderPercent('harmonics2Gain', 'harmonics2GainInput', 'harmonics2GainVal');
+        setupSliderPercent('harmonics3Gain', 'harmonics3GainInput', 'harmonics3GainVal');
+
+        // === START FUNCTION ===
+        function startAM() {
+            let carrierFreq = parseFloat(document.getElementById('carrierFreq').value);
+            let modFreq1 = parseFloat(document.getElementById('modFreq1').value);
+            let modFreq2 = parseFloat(document.getElementById('modFreq2').value);
+            let depthAM = parseFloat(document.getElementById('depth').value) / 100;
+            let fmDepth = parseFloat(document.getElementById('fmDepth').value);
+            let duration = parseFloat(document.getElementById('duration').value);
+            let h2On = document.getElementById('harmonics2Check').checked;
+            let h3On = document.getElementById('harmonics3Check').checked;
+            let h2Gain = parseFloat(document.getElementById('harmonics2Gain').value) / 100;
+            let h3Gain = parseFloat(document.getElementById('harmonics3Gain').value) / 100;
+            
+            if (!audioContext || audioContext.state === 'closed') {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            let when = audioContext.currentTime + 0.1;
+            
+            let carrier = audioContext.createOscillator();
+            carrier.frequency.value = carrierFreq;
+            
+            let modulator1 = audioContext.createOscillator();
+            modulator1.frequency.value = modFreq1;
+            
+            let modulator2 = audioContext.createOscillator();
+            modulator2.frequency.value = modFreq2;
+            
+            let fmGain = audioContext.createGain();
+            fmGain.gain.value = fmDepth;
+            modulator2.connect(fmGain);
+            fmGain.connect(carrier.frequency);
+            
+            let gainNode = audioContext.createGain();
+            gainNode.gain.value = 0.5;
+            
+            let depthNode = audioContext.createGain();
+            depthNode.gain.value = depthAM * 0.5;
+            
+            modulator1.connect(depthNode);
+            depthNode.connect(gainNode.gain);
+            carrier.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Track all oscillators for stopping
+            let oscillators = [carrier, modulator1, modulator2];
+            
+            let harmonic2 = null;
+            let harmonic2Gain = null;
+            
+            if (h2On && h2Gain > 0) {
+                harmonic2 = audioContext.createOscillator();
+                harmonic2.frequency.value = carrierFreq * 2;
+                oscillators.push(harmonic2);
+                
+                harmonic2Gain = audioContext.createGain();
+                harmonic2Gain.gain.value = h2Gain;
+                
+                let fmGainH2 = audioContext.createGain();
+                fmGainH2.gain.value = fmDepth;
+                modulator2.connect(fmGainH2);
+                fmGainH2.connect(harmonic2.frequency);
+                
+                harmonic2.connect(harmonic2Gain);
+                harmonic2Gain.connect(gainNode);
+            }
+            
+            let harmonic3 = null;
+            let harmonic3Gain = null;
+            
+            if (h3On && h3Gain > 0) {
+                harmonic3 = audioContext.createOscillator();
+                harmonic3.frequency.value = carrierFreq * 3;
+                oscillators.push(harmonic3);
+                
+                harmonic3Gain = audioContext.createGain();
+                harmonic3Gain.gain.value = h3Gain;
+                
+                let fmGainH3 = audioContext.createGain();
+                fmGainH3.gain.value = fmDepth;
+                modulator2.connect(fmGainH3);
+                fmGainH3.connect(harmonic3.frequency);
+                
+                harmonic3.connect(harmonic3Gain);
+                harmonic3Gain.connect(gainNode);
+            }
+            
+            // Start all
+            for (let osc of oscillators) {
+                osc.start(when);
+            }
+            
+            // Store for stopping
+            activeOscillators.push(...oscillators);
+            
+            let stopTime = when + duration;
+            for (let osc of oscillators) {
+                osc.stop(stopTime);
+            }
+            
+            // Remove from active after stop
+            setTimeout(() => {
+                activeOscillators = activeOscillators.filter(o => !oscillators.includes(o));
+            }, duration * 1000 + 100);
+            
+            // --- OUTPUT ---
+            let h2Text = h2On ? '2nd: ' + (carrierFreq*2).toFixed(0) + ' Hz (' + (h2Gain*100).toFixed(0) + '%)' : '';
+            let h3Text = h3On ? '3rd: ' + (carrierFreq*3).toFixed(0) + ' Hz (' + (h3Gain*100).toFixed(0) + '%)' : '';
+            let harmonicsText = [h2Text, h3Text].filter(s => s).join(', ') || t('noHarmonics');
+            
+            let output = document.getElementById('output');
+            output.textContent = 
+                '------------------------------------\n' +
+                t('carrierOut').replace('%s', carrierFreq) + '\n' +
+                t('amOut').replace('%s', modFreq1).replace('%s', (depthAM * 100).toFixed(0)) + '\n' +
+                t('fmOut').replace('%s', modFreq2).replace('%s', fmDepth) + '\n' +
+                t('durationOut').replace('%s', duration) + '\n' +
+                t('harmonicsOut').replace('%s', harmonicsText) + '\n' +
+                '------------------------------------';
+            
+            document.getElementById('status').textContent = t('running').replace('%s', duration);
+            
+            setTimeout(() => {
+                document.getElementById('status').textContent = t('done');
+            }, duration * 1000);
+        }
+    </script>
+</body>
+</html>
