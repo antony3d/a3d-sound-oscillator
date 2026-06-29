@@ -61,7 +61,7 @@
         .control-group label {
             font-weight: bold;
             color: #ee9933;
-            min-width: 110px;
+            min-width: 150px;
             font-size: 13px;
         }
         .control-group input[type="range"] {
@@ -304,42 +304,49 @@
                 <label id="lblCarrier">Carrier freq (Hz)</label>
                 <input type="range" id="carrierFreq" min="20" max="10000" value="250" step="1">
                 <input type="text" id="carrierFreqInput" value="250">
+                <span class="value" id="carrierFreqVal">250</span>
             </div>
 
             <div class="control-group">
                 <label id="lblMod1">OSC-1 (AM) Hz</label>
                 <input type="range" id="modFreq1" min="0.1" max="500" value="5" step="0.1">
                 <input type="text" id="modFreq1Input" value="5.0">
+                <span class="value" id="modFreq1Val">5.0</span>
             </div>
 
             <div class="control-group">
                 <label id="lblMod2">OSC-2 (FM) Hz</label>
                 <input type="range" id="modFreq2" min="0.1" max="1000" value="5" step="0.1">
                 <input type="text" id="modFreq2Input" value="5.0">
+                <span class="value" id="modFreq2Val">5.0</span>
             </div>
             
             <div class="control-group">
                 <label id="lblDepth">AM depth</label>
                 <input type="range" id="depth" min="0" max="100" value="50" step="1">
                 <input type="text" id="depthInput" value="50">
+                <span class="value" id="depthVal">50%</span>
             </div>
 
             <div class="control-group">
                 <label id="lblFmDepth">FM depth (Hz)</label>
                 <input type="range" id="fmDepth" min="0" max="10000" value="100" step="1">
                 <input type="text" id="fmDepthInput" value="100">
+                <span class="value" id="fmDepthVal">100</span>
             </div>
             
             <div class="control-group">
                 <label id="lblDuration">Duration (sec)</label>
                 <input type="range" id="duration" min="0.5" max="60" value="5" step="0.5">
                 <input type="text" id="durationInput" value="5">
+                <span class="value" id="durationVal">5.0 sec</span>
             </div>
 
             <div class="control-group">
                 <label id="lblVolume">Volume</label>
                 <input type="range" id="masterVolume" min="0" max="100" value="50" step="1">
                 <input type="text" id="masterVolumeInput" value="50">
+                <span class="value" id="masterVolumeVal">50%</span>
             </div>
             
             <div class="harmonics">
@@ -591,31 +598,31 @@
 
         setDefault('carrierFreq', CONFIG.DEFAULT_CARRIER);
         setDefault('carrierFreqInput', CONFIG.DEFAULT_CARRIER);
-//        document.getElementById('carrierFreqVal').textContent = CONFIG.DEFAULT_CARRIER;
+        document.getElementById('carrierFreqVal').textContent = CONFIG.DEFAULT_CARRIER;
 
         setDefault('modFreq1', CONFIG.DEFAULT_MOD1);
         setDefault('modFreq1Input', CONFIG.DEFAULT_MOD1);
-//        document.getElementById('modFreq1Val').textContent = CONFIG.DEFAULT_MOD1;
+        document.getElementById('modFreq1Val').textContent = CONFIG.DEFAULT_MOD1;
 
         setDefault('modFreq2', CONFIG.DEFAULT_MOD2);
         setDefault('modFreq2Input', CONFIG.DEFAULT_MOD2);
-//        document.getElementById('modFreq2Val').textContent = CONFIG.DEFAULT_MOD2;
+        document.getElementById('modFreq2Val').textContent = CONFIG.DEFAULT_MOD2;
 
         setDefault('depth', CONFIG.DEFAULT_DEPTH);
         setDefault('depthInput', CONFIG.DEFAULT_DEPTH);
-//        document.getElementById('depthVal').textContent = CONFIG.DEFAULT_DEPTH + '%';
+        document.getElementById('depthVal').textContent = CONFIG.DEFAULT_DEPTH + '%';
 
         setDefault('fmDepth', CONFIG.DEFAULT_FM_DEPTH);
         setDefault('fmDepthInput', CONFIG.DEFAULT_FM_DEPTH);
-//        document.getElementById('fmDepthVal').textContent = CONFIG.DEFAULT_FM_DEPTH;
+        document.getElementById('fmDepthVal').textContent = CONFIG.DEFAULT_FM_DEPTH;
 
         setDefault('duration', CONFIG.DEFAULT_DURATION);
         setDefault('durationInput', CONFIG.DEFAULT_DURATION);
-//        document.getElementById('durationVal').textContent = CONFIG.DEFAULT_DURATION.toFixed(1) + ' sec';
+        document.getElementById('durationVal').textContent = CONFIG.DEFAULT_DURATION.toFixed(1) + ' sec';
 
         setDefault('masterVolume', CONFIG.DEFAULT_VOLUME);
         setDefault('masterVolumeInput', CONFIG.DEFAULT_VOLUME);
-//        document.getElementById('masterVolumeVal').textContent = CONFIG.DEFAULT_VOLUME + '%';
+        document.getElementById('masterVolumeVal').textContent = CONFIG.DEFAULT_VOLUME + '%';
 
         setDefault('harmonics2Gain', CONFIG.DEFAULT_HARMONIC2_GAIN);
         setDefault('harmonics2GainInput', CONFIG.DEFAULT_HARMONIC2_GAIN);
