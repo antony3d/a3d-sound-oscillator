@@ -47,16 +47,17 @@
         .controls {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 6px;
             margin: 12px 0;
         }
         .control-group {
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
             background: #4a3a2e;
             padding: 6px 15px;
-            border-radius: 12px;
+            border-radius: 8px;
+            gap: 10px;
         }
         .control-group label {
             font-weight: bold;
@@ -67,53 +68,12 @@
         .control-group input[type="range"] {
             flex: 1;
             margin: 0 8px;
+            accent-color: #ee9933;
             cursor: pointer;
-            height: 6px;
-            -webkit-appearance: none;
-            appearance: none;
-            background: transparent;
-            border-radius: 4px;
-        }
-        .control-group input[type="range"]::-webkit-slider-runnable-track {
-            height: 8px;
-            border-radius: 4px;
-            background: #93745a;
-        }
-        .control-group input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            background: #ee9933;
-            border-radius: 40%;
-            cursor: pointer;
-            border: none;
-            outline: none;
-            margin-top: -6px;
-            position: relative;
-            z-index: 2;
-        }
-        .control-group input[type="range"]::-moz-range-track {
-            height: 8px;
-            border-radius: 4px;
-            background: #93745a;
-        }
-        .control-group input[type="range"]::-moz-range-progress {
-            height: 8px;
-            border-radius: 4px 0 0 4px;
-            background: #ee9933;
-        }
-        .control-group input[type="range"]::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            background: #ee9933;
-            border-radius: 40%;
-            cursor: pointer;
-            border: none;
-            outline: none;
+            height: 4px;
         }
         .control-group input[type="text"] {
-            width: 45px;
+            width: 60px;
             background: #2a1f16;
             border: 1px solid #ee9933;
             color: #eee;
@@ -122,8 +82,11 @@
             text-align: center;
             font-size: 12px;
         }
+        .control-group input[type="text"]:focus {
+            outline: 2px solid #ee9933;
+        }
         .control-group .value {
-            min-width: 30px;
+            min-width: 45px;
             text-align: right;
             color: #ffd700;
             font-weight: bold;
@@ -132,11 +95,11 @@
         .harmonics {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 6px;
+            gap: 12px;
+            padding: 6px 15px;
             background: #4a3a2e;
-            border-radius: 12px;
-            flex-wrap: nowrap;
+            border-radius: 8px;
+            flex-wrap: wrap;
         }
         .harmonics input[type="checkbox"] {
             width: 16px;
@@ -155,12 +118,12 @@
             gap: 6px;
         }
         .harmonics .h-group input[type="range"] {
-            width: 30%;
-            min-width: 50px;
+            width: 60px;
+            accent-color: #ee9933;
             cursor: pointer;
         }
         .harmonics .h-group input[type="text"] {
-            width: 20px;
+            width: 35px;
             background: #2a1f16;
             border: 1px solid #ee9933;
             color: #eee;
@@ -251,43 +214,6 @@
         .lang-inactive:hover {
             color: #ee9933;
         }
-        .level-meter-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #352a21;
-            padding: 4px 15px;
-            border-radius: 4px;
-            margin: 8px 0;
-        }
-        .level-meter-container > label {
-            font-weight: bold;
-            color: #ee9933;
-            min-width: 60px;
-            font-size: 13px;
-        }
-        .level-meter-bar {
-            flex: 1;
-            height: 16px;
-            background: #1a1209;
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
-        .level-meter-fill {
-            height: 100%;
-            width: 0%;
-            border-radius: 4px;
-            background: linear-gradient(90deg, #2ecc71 0%, #f1c40f 60%, #e74c3c 100%);
-            transition: width 0.08s ease-out;
-        }
-        .level-meter-container .value {
-            min-width: 60px;
-            text-align: right;
-            color: #ffd700;
-            font-weight: bold;
-            font-size: 13px;
-        }
     </style>
 </head>
 <body>
@@ -300,13 +226,15 @@
         <h2 id="title">A3d Oscillator</h2>
         
         <div class="controls">
-            <div class="control-group">
+            <!-- Carrier frequency -->
+            <div class="control-group full-width">
                 <label id="lblCarrier">Carrier freq (Hz)</label>
-                <input type="range" id="carrierFreq" min="20" max="10000" value="250" step="1">
+                <input type="range" id="carrierFreq" min="20" max="18000" value="250" step="1">
                 <input type="text" id="carrierFreqInput" value="250">
                 <span class="value" id="carrierFreqVal">250</span>
             </div>
 
+            <!-- OSC-1: Amplitude modulation -->
             <div class="control-group">
                 <label id="lblMod1">OSC-1 (AM) Hz</label>
                 <input type="range" id="modFreq1" min="0.1" max="500" value="5" step="0.1">
@@ -314,6 +242,7 @@
                 <span class="value" id="modFreq1Val">5.0</span>
             </div>
 
+            <!-- OSC-2: Frequency modulation -->
             <div class="control-group">
                 <label id="lblMod2">OSC-2 (FM) Hz</label>
                 <input type="range" id="modFreq2" min="0.1" max="1000" value="5" step="0.1">
@@ -330,7 +259,7 @@
 
             <div class="control-group">
                 <label id="lblFmDepth">FM depth (Hz)</label>
-                <input type="range" id="fmDepth" min="0" max="10000" value="100" step="1">
+                <input type="range" id="fmDepth" min="0" max="2000" value="100" step="1">
                 <input type="text" id="fmDepthInput" value="100">
                 <span class="value" id="fmDepthVal">100</span>
             </div>
@@ -350,33 +279,23 @@
             </div>
             
             <div class="harmonics">
-                <div class="control-group">
+                <div class="h-group">
                     <input type="checkbox" id="harmonics2Check">
                     <label id="lblHarm2"><b>Harmonics:</b> 2nd</label>
-                    <span class="h-group">
-                    <input type="range" id="harmonics2Gain" min="0" max="100" value="10" step="0.1">
-                    </span>
+                    <input type="range" id="harmonics2Gain" min="0" max="100" value="10" step="1">
                     <input type="text" id="harmonics2GainInput" value="10">
+                    <span class="value" id="harmonics2GainVal">10%</span>
                 </div>
-                <div class="control-group">
+                <div class="h-group">
                     <input type="checkbox" id="harmonics3Check">
                     <label id="lblHarm3">3rd</label>
-                    <span class="h-group">
-                    <input type="range" id="harmonics3Gain" min="0" max="100" value="5" step="0.1">
-                    </span>
-                    <input type="text" id="harmonics3GainInput" value="10">
+                    <input type="range" id="harmonics3Gain" min="0" max="100" value="5" step="1">
+                    <input type="text" id="harmonics3GainInput" value="5">
+                    <span class="value" id="harmonics3GainVal">5%</span>
                 </div>
             </div>
         </div>
         
-        <div class="level-meter-container">
-            <label id="lblLevel">Level</label>
-            <div class="level-meter-bar">
-                <div class="level-meter-fill" id="levelFill"></div>
-            </div>
-            <span class="value" id="levelVal">-∞ dB</span>
-        </div>
-
         <div class="button-row">
             <button id="btnStart" class="btn-start" onclick="startAM()">Start modulation</button>
             <button id="btnStop" class="btn-stop" onclick="stopAllSounds()">Stop all sounds</button>
@@ -402,7 +321,7 @@
             DEFAULT_DURATION: 3,
             DEFAULT_VOLUME: 50,
             MIN_CARRIER: 20,
-            MAX_CARRIER: 10000,
+            MAX_CARRIER: 18000,
             MIN_MOD: 0.1,
             MAX_MOD: 500
         };
@@ -428,12 +347,12 @@
                 stopped: 'Stopped by user',
                 done: 'Done',
                 carrierOut: 'Carrier: %s Hz',
-                amOut: 'OSC-1 (AM): %s Hz, depth %s%',
+                amOut: 'OSC-1 (AM): %s Hz, depth %s%%',
                 fmOut: 'OSC-2 (FM): %s Hz, depth %s Hz',
                 durationOut: 'Duration: %s sec',
                 harmonicsOut: 'Harmonics: %s',
                 noHarmonics: 'none',
-                volumeOut: 'Volume: %s%'
+                volumeOut: 'Volume: %s%%'
             },
             rus: {
                 title: 'A3d Oscillator',
@@ -454,22 +373,18 @@
                 stopped: 'Остановлено пользователем',
                 done: 'Закончено',
                 carrierOut: 'Несущая: %s Гц',
-                amOut: 'ОСЦ-1 (AM): %s Гц, глубина %s%',
+                amOut: 'ОСЦ-1 (AM): %s Гц, глубина %s%%',
                 fmOut: 'ОСЦ-2 (FM): %s Гц, глубина %s Гц',
                 durationOut: 'Длительность: %s сек',
                 harmonicsOut: 'Гармоники: %s',
                 noHarmonics: 'нет',
-                volumeOut: 'Громкость: %s%'
+                volumeOut: 'Громкость: %s%%'
             }
         };
 
         let currentLang = 'eng';
         let audioContext = null;
-        let masterGain = null;
-        let analyserNode = null;
         let activeOscillators = [];
-        let levelAnimFrame = null;
-        let isPlaying = false;
 
         // === LANGUAGE SWITCH ===
         function setLang(lang) {
@@ -507,87 +422,26 @@
             }
         }
 
-        // === INIT AUDIO CONTEXT ===
-        function initAudio() {
-            if (!audioContext || audioContext.state === 'closed') {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                masterGain = audioContext.createGain();
-                masterGain.gain.value = 1.0;
-                analyserNode = audioContext.createAnalyser();
-                analyserNode.fftSize = 2048;
-                masterGain.connect(analyserNode);
-                analyserNode.connect(audioContext.destination);
-            }
-        }
-
         // === STOP ALL SOUNDS ===
         function stopAllSounds() {
-            if (levelAnimFrame) {
-                cancelAnimationFrame(levelAnimFrame);
-                levelAnimFrame = null;
-            }
-            
-            const levelFill = document.getElementById('levelFill');
-            const levelVal = document.getElementById('levelVal');
-            if (levelFill) levelFill.style.width = '0%';
-            if (levelVal) levelVal.textContent = '-∞ dB';
-
-            for (let osc of activeOscillators) {
-                try { osc.stop(); } catch(e) {}
-                try { osc.disconnect(); } catch(e) {}
-            }
-            activeOscillators = [];
-            
-            isPlaying = false;
-            document.getElementById('status').textContent = t('stopped');
-            
-            let output = document.getElementById('output');
-            if (!output.textContent.includes('Stopped') && !output.textContent.includes('Остановлено')) {
-                output.textContent = output.textContent + '\n' + '--- ' + t('stopped') + ' ---';
-            }
-        }
-
-        // === LEVEL METER ===
-        function updateLevelMeter() {
-            if (!analyserNode || !isPlaying) return;
-
-            const bufferLength = analyserNode.frequencyBinCount;
-            const dataArray = new Float32Array(bufferLength);
-            const levelFill = document.getElementById('levelFill');
-            const levelVal = document.getElementById('levelVal');
-
-            function drawLevel() {
-                if (!isPlaying || !analyserNode) {
-                    levelFill.style.width = '0%';
-                    levelVal.textContent = '-∞ dB';
-                    return;
+            if (audioContext && audioContext.state === 'running') {
+                for (let osc of activeOscillators) {
+                    try { osc.stop(); } catch(e) {}
+                    try { osc.disconnect(); } catch(e) {}
                 }
+                activeOscillators = [];
                 
-                levelAnimFrame = requestAnimationFrame(drawLevel);
-
-                analyserNode.getFloatTimeDomainData(dataArray);
-
-                let sum = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    sum += dataArray[i] * dataArray[i];
+                audioContext.close();
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                document.getElementById('status').textContent = t('stopped');
+                let output = document.getElementById('output');
+                if (!output.textContent.includes('Stopped') && !output.textContent.includes('Остановлено')) {
+                    output.textContent = output.textContent + '\n' + '--- ' + t('stopped') + ' ---';
                 }
-                const rms = Math.sqrt(sum / bufferLength);
-
-                let db = 20 * Math.log10(rms);
-                if (db < -60) db = -60;
-                if (db > 0) db = 0;
-
-                const pct = ((db + 60) / 60) * 100;
-                levelFill.style.width = pct + '%';
-
-                if (db < -59) {
-                    levelVal.textContent = '-∞ dB';
-                } else {
-                    levelVal.textContent = db.toFixed(1) + ' dB';
-                }
+            } else {
+                document.getElementById('status').textContent = t('status');
             }
-
-            drawLevel();
         }
 
         // === SET DEFAULTS ===
@@ -626,65 +480,78 @@
 
         setDefault('harmonics2Gain', CONFIG.DEFAULT_HARMONIC2_GAIN);
         setDefault('harmonics2GainInput', CONFIG.DEFAULT_HARMONIC2_GAIN);
-//        document.getElementById('harmonics2GainVal').textContent = CONFIG.DEFAULT_HARMONIC2_GAIN + '%';
+        document.getElementById('harmonics2GainVal').textContent = CONFIG.DEFAULT_HARMONIC2_GAIN + '%';
 
         setDefault('harmonics3Gain', CONFIG.DEFAULT_HARMONIC3_GAIN);
         setDefault('harmonics3GainInput', CONFIG.DEFAULT_HARMONIC3_GAIN);
-//        document.getElementById('harmonics3GainVal').textContent = CONFIG.DEFAULT_HARMONIC3_GAIN + '%';
+        document.getElementById('harmonics3GainVal').textContent = CONFIG.DEFAULT_HARMONIC3_GAIN + '%';
 
         // === SLIDER SETUP ===
-        function setupSlider(inputId, inputIdText, valId) {
+        function setupSlider(inputId, inputIdText, valId, updateFn, fromInputFn) {
             let slider = document.getElementById(inputId);
             let input = document.getElementById(inputIdText);
             let val = document.getElementById(valId);
             
-            function updateSlider() {
-                const min = parseFloat(slider.min);
-                const max = parseFloat(slider.max);
-                const value = parseFloat(slider.value);
-                const percent = ((value - min) / (max - min)) * 100;
-
-                slider.style.background = `linear-gradient(to right, #ee9933 0%, #ee9933 ${percent}%, #93745a ${percent}%, #93745a 100%)`;
-                slider.style.backgroundSize = '100% 6px';
-                slider.style.backgroundPosition = '0 0';
-                slider.style.backgroundRepeat = 'no-repeat';
-
-                if (input) input.value = value;
-                if (val) val.textContent = value;
-            }
-
-            if (slider) {
-                slider.addEventListener('input', updateSlider);
-                if (input) {
-                    input.addEventListener('change', function() {
-                        let v = parseFloat(this.value);
-                        if (isNaN(v) || v < parseFloat(slider.min) || v > parseFloat(slider.max)) {
-                            this.style.borderColor = 'red';
-                            return;
-                        }
-                        this.style.borderColor = '#ee9933';
-                        slider.value = v;
-                        updateSlider();
-                    });
-                }
-                updateSlider();
+            slider.addEventListener('input', function() {
+                input.value = this.value;
+                if (val) val.textContent = this.value;
+                if (updateFn) updateFn(this.value);
+            });
+            
+            if (input) {
+                input.addEventListener('change', function() {
+                    let v = parseFloat(this.value);
+                    if (isNaN(v)) {
+                        this.style.borderColor = 'red';
+                        return;
+                    }
+                    this.style.borderColor = '#ee9933';
+                    slider.value = v;
+                    if (val) val.textContent = v;
+                    if (fromInputFn) fromInputFn(v);
+                });
             }
         }
 
+        function setupSliderPercent(inputId, inputIdText, valId, updateFn, fromInputFn) {
+            let slider = document.getElementById(inputId);
+            let input = document.getElementById(inputIdText);
+            let val = document.getElementById(valId);
+            
+            slider.addEventListener('input', function() {
+                input.value = this.value;
+                if (val) val.textContent = this.value + '%';
+                if (updateFn) updateFn(this.value);
+            });
+            
+            if (input) {
+                input.addEventListener('change', function() {
+                    let v = parseFloat(this.value);
+                    if (isNaN(v) || v < 0 || v > 100) {
+                        this.style.borderColor = 'red';
+                        return;
+                    }
+                    this.style.borderColor = '#ee9933';
+                    slider.value = v;
+                    if (val) val.textContent = v + '%';
+                    if (fromInputFn) fromInputFn(v);
+                });
+            }
+        }
+
+        // === INIT ===
         setupSlider('carrierFreq', 'carrierFreqInput', 'carrierFreqVal');
         setupSlider('modFreq1', 'modFreq1Input', 'modFreq1Val');
         setupSlider('modFreq2', 'modFreq2Input', 'modFreq2Val');
         setupSlider('depth', 'depthInput', 'depthVal');
         setupSlider('fmDepth', 'fmDepthInput', 'fmDepthVal');
         setupSlider('duration', 'durationInput', 'durationVal');
-        setupSlider('masterVolume', 'masterVolumeInput', 'masterVolumeVal');
-        setupSlider('harmonics2Gain', 'harmonics2GainInput', 'harmonics2GainVal');
-        setupSlider('harmonics3Gain', 'harmonics3GainInput', 'harmonics3GainVal');
+        setupSliderPercent('masterVolume', 'masterVolumeInput', 'masterVolumeVal');
+        setupSliderPercent('harmonics2Gain', 'harmonics2GainInput', 'harmonics2GainVal');
+        setupSliderPercent('harmonics3Gain', 'harmonics3GainInput', 'harmonics3GainVal');
 
         // === START FUNCTION ===
         function startAM() {
-            initAudio();
-            
             let carrierFreq = parseFloat(document.getElementById('carrierFreq').value);
             let modFreq1 = parseFloat(document.getElementById('modFreq1').value);
             let modFreq2 = parseFloat(document.getElementById('modFreq2').value);
@@ -697,6 +564,9 @@
             let h2Gain = parseFloat(document.getElementById('harmonics2Gain').value) / 100;
             let h3Gain = parseFloat(document.getElementById('harmonics3Gain').value) / 100;
             
+            if (!audioContext || audioContext.state === 'closed') {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
             let when = audioContext.currentTime + 0.1;
             
             let carrier = audioContext.createOscillator();
@@ -708,11 +578,14 @@
             let modulator2 = audioContext.createOscillator();
             modulator2.frequency.value = modFreq2;
             
+            // --- MASTER VOLUME: УМНОЖАЕМ ВСЁ ---
+            // FM depth умножаем на громкость
             let fmGain = audioContext.createGain();
             fmGain.gain.value = fmDepth * masterVolume;
             modulator2.connect(fmGain);
             fmGain.connect(carrier.frequency);
             
+            // AM depth умножаем на громкость
             let gainNode = audioContext.createGain();
             gainNode.gain.value = 0.5 * masterVolume;
             
@@ -722,11 +595,11 @@
             modulator1.connect(depthNode);
             depthNode.connect(gainNode.gain);
             carrier.connect(gainNode);
+            gainNode.connect(audioContext.destination);
             
-            gainNode.connect(masterGain);
-            
+            // Track all oscillators for stopping
             let oscillators = [carrier, modulator1, modulator2];
-
+            
             let harmonic2 = null;
             let harmonic2Gain = null;
             
@@ -736,6 +609,7 @@
                 oscillators.push(harmonic2);
                 
                 harmonic2Gain = audioContext.createGain();
+                // Громкость гармоники тоже умножаем на masterVolume
                 harmonic2Gain.gain.value = h2Gain * masterVolume;
                 
                 let fmGainH2 = audioContext.createGain();
@@ -744,7 +618,7 @@
                 fmGainH2.connect(harmonic2.frequency);
                 
                 harmonic2.connect(harmonic2Gain);
-                harmonic2Gain.connect(masterGain);
+                harmonic2Gain.connect(gainNode);
             }
             
             let harmonic3 = null;
@@ -764,38 +638,28 @@
                 fmGainH3.connect(harmonic3.frequency);
                 
                 harmonic3.connect(harmonic3Gain);
-                harmonic3Gain.connect(masterGain);
+                harmonic3Gain.connect(gainNode);
             }
             
+            // Start all
             for (let osc of oscillators) {
                 osc.start(when);
             }
             
+            // Store for stopping
             activeOscillators.push(...oscillators);
-            isPlaying = true;
-
-            updateLevelMeter();
             
             let stopTime = when + duration;
             for (let osc of oscillators) {
                 osc.stop(stopTime);
             }
             
+            // Remove from active after stop
             setTimeout(() => {
                 activeOscillators = activeOscillators.filter(o => !oscillators.includes(o));
-                if (activeOscillators.length === 0) {
-                    isPlaying = false;
-                    const levelFill = document.getElementById('levelFill');
-                    const levelVal = document.getElementById('levelVal');
-                    if (levelFill) levelFill.style.width = '0%';
-                    if (levelVal) levelVal.textContent = '-∞ dB';
-                    if (levelAnimFrame) {
-                        cancelAnimationFrame(levelAnimFrame);
-                        levelAnimFrame = null;
-                    }
-                }
             }, duration * 1000 + 100);
             
+            // --- OUTPUT ---
             let h2Text = h2On ? '2nd: ' + (carrierFreq*2).toFixed(0) + ' Hz (' + (h2Gain*100).toFixed(0) + '%)' : '';
             let h3Text = h3On ? '3rd: ' + (carrierFreq*3).toFixed(0) + ' Hz (' + (h3Gain*100).toFixed(0) + '%)' : '';
             let harmonicsText = [h2Text, h3Text].filter(s => s).join(', ') || t('noHarmonics');
