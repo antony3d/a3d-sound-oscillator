@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A3d Projects</title>
+    <style>
+        body {
+            background-color: #2b221e;
+            color: #f7a440;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Чтобы не было полос прокрутки из-за канваса */
+            position: relative;
+        }
+        /* Холст для фоновых синусоид */
+        #waveform-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none; /* Чтобы волны не мешали кликать по кнопкам */
+        }
+        .container {
+            background-color: #4a362d;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+            border: 1px solid #5a4338;
+            position: relative;
+            z-index: 2; /* Контент всегда поверх волн */
+        }
+        /* Стилизация заголовка как кнопки */
+        .title-btn {
+            display: inline-block;
+            color: #f7a440;
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 30px;
+            text-decoration: none;
+            transition: color 0.2s, transform 0.1s;
+        }
+        .title-btn:hover {
+            color: #ffb85c;
+            transform: scale(1.02);
+        }
+        .btn-launch {
+            display: inline-block;
+            background-color: #e67e22;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 20px;
+            text-decoration: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            width: 80%;
+            margin-bottom: 40px;
+        }
+        .btn-launch:hover {
+            background-color: #d35400;
+        }
+        .btn-launch:active {
+            transform: scale(0.98);
+        }
+        .status-box {
+            background-color: #0b2512;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: left;
+            min-height: 80px;
+            border: 1px solid #143d1e;
+        }
+        .status-text {
+            color: #2ecc71;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 0 0 10px 0;
+        }
+        /* Анимация мигающего курсора */
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background-color: #f39c12;
+            margin-left: 4px;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+        }
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+        /* Ссылка в футере */
+        .footer-link {
+            display: block;
+            color: #7f8c8d;
+            font-size: 12px;
+            text-align: right;
+            margin-top: 20px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .footer-link:hover {
+            color: #bdc3c7;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Задний фон с волнами -->
+    <canvas id="waveform-canvas"></canvas>
+
+    <div class="container">
+        <!-- Заголовок-кнопка из твоего апдейта -->
+        <a href="sound_oscillator.html" class="title-btn">Projects:</a>
+        
+        <!-- Большая оранжевая кнопка запуска из твоего апдейта -->
+        <a href="sound_oscillator.html" class="btn-launch">Launch A3d Oscillator Project</a>
+        
+        <div class="status-box">
+            <p class="status-text">Ready</p>
+            <p class="status-text" style="color: #f39c12; margin-bottom: 0;">
+                Waiting for user action...<span class="cursor"></span>
+            </p>
+        </div>
+
+        <!-- Ссылка на твой профиль GitHub -->
+        <a href="https://github.com/antony3d/" target="_blank" class="footer-link">A3d Hub v1.0.0</a>
+    </div>
+
+    <!-- Скрипт для отрисовки и анимации синусоид -->
+    <script>
+        const canvas = document.getElementById('waveform-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Подгоняем размер канваса под экран
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let offset = 0;
+
+        function drawWaves() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Настройки волн (3 разные синусоиды для красивого наложения)
+            const waves = [
+                { amplitude: 50, frequency: 0.01, speed: 0.02, opacity: 0.12 },
+                { amplitude: 25, frequency: 0.01, speed: -0.015, opacity: 0.08 },
+                { amplitude: 70, frequency: 0.25, speed: 0.3, opacity: 0.05 }
+            ];
+
+            waves.forEach(wave => {
+                ctx.beginPath();
+                ctx.lineWidth = 2;
+                // Полупрозрачный зелёный цвет под стиль твоего статус-бокса
+                ctx.strokeStyle = `rgba(46, 204, 113, ${wave.opacity})`;
+
+                for (let x = 0; x < canvas.width; x++) {
+                    // Формула синусоиды сдвинутая по центру экрана по вертикали
+                    const y = canvas.height / 2 + Math.sin(x * wave.frequency + offset * wave.speed) * wave.amplitude;
+                    if (x === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+            });
+
+            offset++;
+            requestAnimationFrame(drawWaves);
+        }
+
+        drawWaves();
+    </script>
+</body>
+</html>
