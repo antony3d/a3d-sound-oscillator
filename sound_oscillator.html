@@ -214,7 +214,6 @@
         .lang-inactive:hover {
             color: #ee9933;
         }
-        /* Level meter */
         .level-meter-container {
             display: flex;
             align-items: center;
@@ -264,7 +263,6 @@
         <h2 id="title">A3d Oscillator</h2>
         
         <div class="controls">
-            <!-- Carrier frequency -->
             <div class="control-group full-width">
                 <label id="lblCarrier">Carrier freq (Hz)</label>
                 <input type="range" id="carrierFreq" min="20" max="18000" value="250" step="1">
@@ -272,7 +270,6 @@
                 <span class="value" id="carrierFreqVal">250</span>
             </div>
 
-            <!-- OSC-1: Amplitude modulation -->
             <div class="control-group">
                 <label id="lblMod1">OSC-1 (AM) Hz</label>
                 <input type="range" id="modFreq1" min="0.1" max="500" value="5" step="0.1">
@@ -280,7 +277,6 @@
                 <span class="value" id="modFreq1Val">5.0</span>
             </div>
 
-            <!-- OSC-2: Frequency modulation -->
             <div class="control-group">
                 <label id="lblMod2">OSC-2 (FM) Hz</label>
                 <input type="range" id="modFreq2" min="0.1" max="1000" value="5" step="0.1">
@@ -334,7 +330,6 @@
             </div>
         </div>
         
-        <!-- Level meter -->
         <div class="level-meter-container">
             <label id="lblLevel">Level</label>
             <div class="level-meter-bar">
@@ -431,9 +426,11 @@
 
         let currentLang = 'eng';
         let audioContext = null;
-        let analyserNode = null;
+        let masterGain = null;      // общий узел для всех звуков
+        let analyserNode = null;    // общий анализатор уровня
         let activeOscillators = [];
         let levelAnimFrame = null;
+        let isPlaying = false;
 
         // === LANGUAGE SWITCH ===
         function setLang(lang) {
@@ -471,29 +468,91 @@
             }
         }
 
-        // === STOP ALL SOUNDS ===
-        function stopAllSounds() {
-            if (audioContext && audioContext.state === 'running') {
-                // Stop level meter
-                stopLevelMeter();
-
-                for (let osc of activeOscillators) {
-                    try { osc.stop(); } catch(e) {}
-                    try { osc.disconnect(); } catch(e) {}
-                }
-                activeOscillators = [];
-                
-                audioContext.close();
+        // === INIT AUDIO CONTEXT (один раз) ===
+        function initAudio() {
+            if (!audioContext || audioContext.state === 'closed') {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 
-                document.getElementById('status').textContent = t('stopped');
-                let output = document.getElementById('output');
-                if (!output.textContent.includes('Stopped') && !output.textContent.includes('Остановлено')) {
-                    output.textContent = output.textContent + '\n' + '--- ' + t('stopped') + ' ---';
-                }
-            } else {
-                document.getElementById('status').textContent = t('status');
+                // Создаём общий masterGain и analyser
+                masterGain = audioContext.createGain();
+                masterGain.gain.value = 1.0;
+                
+                analyserNode = audioContext.createAnalyser();
+                analyserNode.fftSize = 2048;
+                
+                masterGain.connect(analyserNode);
+                analyserNode.connect(audioContext.destination);
             }
+        }
+
+        // === STOP ALL SOUNDS ===
+        function stopAllSounds() {
+            if (levelAnimFrame) {
+                cancelAnimationFrame(levelAnimFrame);
+                levelAnimFrame = null;
+            }
+            
+            const levelFill = document.getElementById('levelFill');
+            const levelVal = document.getElementById('levelVal');
+            if (levelFill) levelFill.style.width = '0%';
+            if (levelVal) levelVal.textContent = '-∞ dB';
+
+            for (let osc of activeOscillators) {
+                try { osc.stop(); } catch(e) {}
+                try { osc.disconnect(); } catch(e) {}
+            }
+            activeOscillators = [];
+            
+            isPlaying = false;
+            document.getElementById('status').textContent = t('stopped');
+            
+            let output = document.getElementById('output');
+            if (!output.textContent.includes('Stopped') && !output.textContent.includes('Остановлено')) {
+                output.textContent = output.textContent + '\n' + '--- ' + t('stopped') + ' ---';
+            }
+        }
+
+        // === LEVEL METER ===
+        function updateLevelMeter() {
+            if (!analyserNode || !isPlaying) return;
+
+            const bufferLength = analyserNode.frequencyBinCount;
+            const dataArray = new Float32Array(bufferLength);
+            const levelFill = document.getElementById('levelFill');
+            const levelVal = document.getElementById('levelVal');
+
+            function drawLevel() {
+                if (!isPlaying || !analyserNode) {
+                    levelFill.style.width = '0%';
+                    levelVal.textContent = '-∞ dB';
+                    return;
+                }
+                
+                levelAnimFrame = requestAnimationFrame(drawLevel);
+
+                analyserNode.getFloatTimeDomainData(dataArray);
+
+                let sum = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    sum += dataArray[i] * dataArray[i];
+                }
+                const rms = Math.sqrt(sum / bufferLength);
+
+                let db = 20 * Math.log10(rms);
+                if (db < -60) db = -60;
+                if (db > 0) db = 0;
+
+                const pct = ((db + 60) / 60) * 100;
+                levelFill.style.width = pct + '%';
+
+                if (db < -59) {
+                    levelVal.textContent = '-∞ dB';
+                } else {
+                    levelVal.textContent = db.toFixed(1) + ' dB';
+                }
+            }
+
+            drawLevel();
         }
 
         // === SET DEFAULTS ===
@@ -591,7 +650,7 @@
             }
         }
 
-        // === INIT ===
+        // === INIT SLIDERS ===
         setupSlider('carrierFreq', 'carrierFreqInput', 'carrierFreqVal');
         setupSlider('modFreq1', 'modFreq1Input', 'modFreq1Val');
         setupSlider('modFreq2', 'modFreq2Input', 'modFreq2Val');
@@ -602,59 +661,11 @@
         setupSliderPercent('harmonics2Gain', 'harmonics2GainInput', 'harmonics2GainVal');
         setupSliderPercent('harmonics3Gain', 'harmonics3GainInput', 'harmonics3GainVal');
 
-        // === LEVEL METER ===
-        function updateLevelMeter() {
-            if (!analyserNode) return;
-
-            const bufferLength = analyserNode.frequencyBinCount;
-            const dataArray = new Float32Array(bufferLength);
-            const levelFill = document.getElementById('levelFill');
-            const levelVal = document.getElementById('levelVal');
-
-            function drawLevel() {
-                levelAnimFrame = requestAnimationFrame(drawLevel);
-
-                analyserNode.getFloatTimeDomainData(dataArray);
-
-                // Compute RMS
-                let sum = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    sum += dataArray[i] * dataArray[i];
-                }
-                const rms = Math.sqrt(sum / bufferLength);
-
-                // Convert to dB (clamped to -60 .. 0)
-                let db = 20 * Math.log10(rms);
-                if (db < -60) db = -60;
-                if (db > 0) db = 0;
-
-                // Update UI: map -60..0 to 0..100%
-                const pct = ((db + 60) / 60) * 100;
-                levelFill.style.width = pct + '%';
-
-                if (db < -59) {
-                    levelVal.textContent = '-∞ dB';
-                } else {
-                    levelVal.textContent = db.toFixed(1) + ' dB';
-                }
-            }
-
-            drawLevel();
-        }
-
-        function stopLevelMeter() {
-            if (levelAnimFrame) {
-                cancelAnimationFrame(levelAnimFrame);
-                levelAnimFrame = null;
-            }
-            const levelFill = document.getElementById('levelFill');
-            const levelVal = document.getElementById('levelVal');
-            if (levelFill) levelFill.style.width = '0%';
-            if (levelVal) levelVal.textContent = '-∞ dB';
-        }
-
         // === START FUNCTION ===
         function startAM() {
+            // Инициализируем аудиоконтекст (если ещё не создан)
+            initAudio();
+            
             let carrierFreq = parseFloat(document.getElementById('carrierFreq').value);
             let modFreq1 = parseFloat(document.getElementById('modFreq1').value);
             let modFreq2 = parseFloat(document.getElementById('modFreq2').value);
@@ -667,11 +678,9 @@
             let h2Gain = parseFloat(document.getElementById('harmonics2Gain').value) / 100;
             let h3Gain = parseFloat(document.getElementById('harmonics3Gain').value) / 100;
             
-            if (!audioContext || audioContext.state === 'closed') {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
             let when = audioContext.currentTime + 0.1;
             
+            // --- СОЗДАЁМ ОСЦИЛЛЯТОРЫ ДЛЯ ЭТОГО ЗВУКА ---
             let carrier = audioContext.createOscillator();
             carrier.frequency.value = carrierFreq;
             
@@ -681,14 +690,11 @@
             let modulator2 = audioContext.createOscillator();
             modulator2.frequency.value = modFreq2;
             
-            // --- MASTER VOLUME: УМНОЖАЕМ ВСЁ ---
-            // FM depth умножаем на громкость
             let fmGain = audioContext.createGain();
             fmGain.gain.value = fmDepth * masterVolume;
             modulator2.connect(fmGain);
             fmGain.connect(carrier.frequency);
             
-            // AM depth умножаем на громкость
             let gainNode = audioContext.createGain();
             gainNode.gain.value = 0.5 * masterVolume;
             
@@ -698,18 +704,13 @@
             modulator1.connect(depthNode);
             depthNode.connect(gainNode.gain);
             carrier.connect(gainNode);
-
-            // Analyser for level meter
-            if (!analyserNode) {
-                analyserNode = audioContext.createAnalyser();
-                analyserNode.fftSize = 2048;
-            }
-            gainNode.connect(analyserNode);
-            analyserNode.connect(audioContext.destination);
             
-            // Track all oscillators for stopping
+            // Подключаем к ОБЩЕМУ masterGain (а не напрямую в destination)
+            gainNode.connect(masterGain);
+            
             let oscillators = [carrier, modulator1, modulator2];
 
+            // --- ВТОРАЯ ГАРМОНИКА ---
             let harmonic2 = null;
             let harmonic2Gain = null;
             
@@ -719,7 +720,6 @@
                 oscillators.push(harmonic2);
                 
                 harmonic2Gain = audioContext.createGain();
-                // Громкость гармоники тоже умножаем на masterVolume
                 harmonic2Gain.gain.value = h2Gain * masterVolume;
                 
                 let fmGainH2 = audioContext.createGain();
@@ -728,9 +728,10 @@
                 fmGainH2.connect(harmonic2.frequency);
                 
                 harmonic2.connect(harmonic2Gain);
-                harmonic2Gain.connect(gainNode);
+                harmonic2Gain.connect(masterGain);
             }
             
+            // --- ТРЕТЬЯ ГАРМОНИКА ---
             let harmonic3 = null;
             let harmonic3Gain = null;
             
@@ -748,31 +749,42 @@
                 fmGainH3.connect(harmonic3.frequency);
                 
                 harmonic3.connect(harmonic3Gain);
-                harmonic3Gain.connect(gainNode);
+                harmonic3Gain.connect(masterGain);
             }
             
-            // Start all
+            // --- СТАРТ ---
             for (let osc of oscillators) {
                 osc.start(when);
             }
             
-            // Store for stopping
             activeOscillators.push(...oscillators);
+            isPlaying = true;
 
-            // Start level meter
+            // Запускаем уровень
             updateLevelMeter();
             
+            // --- СТОП через duration секунд ---
             let stopTime = when + duration;
             for (let osc of oscillators) {
                 osc.stop(stopTime);
             }
             
-            // Remove from active after stop
             setTimeout(() => {
                 activeOscillators = activeOscillators.filter(o => !oscillators.includes(o));
+                if (activeOscillators.length === 0) {
+                    isPlaying = false;
+                    const levelFill = document.getElementById('levelFill');
+                    const levelVal = document.getElementById('levelVal');
+                    if (levelFill) levelFill.style.width = '0%';
+                    if (levelVal) levelVal.textContent = '-∞ dB';
+                    if (levelAnimFrame) {
+                        cancelAnimationFrame(levelAnimFrame);
+                        levelAnimFrame = null;
+                    }
+                }
             }, duration * 1000 + 100);
             
-            // --- OUTPUT ---
+            // --- ВЫВОД В OUTPUT ---
             let h2Text = h2On ? '2nd: ' + (carrierFreq*2).toFixed(0) + ' Hz (' + (h2Gain*100).toFixed(0) + '%)' : '';
             let h3Text = h3On ? '3rd: ' + (carrierFreq*3).toFixed(0) + ' Hz (' + (h3Gain*100).toFixed(0) + '%)' : '';
             let harmonicsText = [h2Text, h3Text].filter(s => s).join(', ') || t('noHarmonics');
