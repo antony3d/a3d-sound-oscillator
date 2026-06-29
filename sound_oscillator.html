@@ -214,6 +214,44 @@
         .lang-inactive:hover {
             color: #ee9933;
         }
+        /* Level meter */
+        .level-meter-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #4a3a2e;
+            padding: 6px 15px;
+            border-radius: 8px;
+            margin: 8px 0;
+        }
+        .level-meter-container > label {
+            font-weight: bold;
+            color: #ee9933;
+            min-width: 60px;
+            font-size: 13px;
+        }
+        .level-meter-bar {
+            flex: 1;
+            height: 14px;
+            background: #1a1209;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .level-meter-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #2ecc71 0%, #f1c40f 60%, #e74c3c 100%);
+            transition: width 0.08s ease-out;
+        }
+        .level-meter-container .value {
+            min-width: 60px;
+            text-align: right;
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -296,6 +334,15 @@
             </div>
         </div>
         
+        <!-- Level meter -->
+        <div class="level-meter-container">
+            <label id="lblLevel">Level</label>
+            <div class="level-meter-bar">
+                <div class="level-meter-fill" id="levelFill"></div>
+            </div>
+            <span class="value" id="levelVal">-∞ dB</span>
+        </div>
+
         <div class="button-row">
             <button id="btnStart" class="btn-start" onclick="startAM()">Start modulation</button>
             <button id="btnStop" class="btn-stop" onclick="stopAllSounds()">Stop all sounds</button>
@@ -384,7 +431,9 @@
 
         let currentLang = 'eng';
         let audioContext = null;
+        let analyserNode = null;
         let activeOscillators = [];
+        let levelAnimFrame = null;
 
         // === LANGUAGE SWITCH ===
         function setLang(lang) {
@@ -425,6 +474,9 @@
         // === STOP ALL SOUNDS ===
         function stopAllSounds() {
             if (audioContext && audioContext.state === 'running') {
+                // Stop level meter
+                stopLevelMeter();
+
                 for (let osc of activeOscillators) {
                     try { osc.stop(); } catch(e) {}
                     try { osc.disconnect(); } catch(e) {}
@@ -550,6 +602,57 @@
         setupSliderPercent('harmonics2Gain', 'harmonics2GainInput', 'harmonics2GainVal');
         setupSliderPercent('harmonics3Gain', 'harmonics3GainInput', 'harmonics3GainVal');
 
+        // === LEVEL METER ===
+        function updateLevelMeter() {
+            if (!analyserNode) return;
+
+            const bufferLength = analyserNode.frequencyBinCount;
+            const dataArray = new Float32Array(bufferLength);
+            const levelFill = document.getElementById('levelFill');
+            const levelVal = document.getElementById('levelVal');
+
+            function drawLevel() {
+                levelAnimFrame = requestAnimationFrame(drawLevel);
+
+                analyserNode.getFloatTimeDomainData(dataArray);
+
+                // Compute RMS
+                let sum = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    sum += dataArray[i] * dataArray[i];
+                }
+                const rms = Math.sqrt(sum / bufferLength);
+
+                // Convert to dB (clamped to -60 .. 0)
+                let db = 20 * Math.log10(rms);
+                if (db < -60) db = -60;
+                if (db > 0) db = 0;
+
+                // Update UI: map -60..0 to 0..100%
+                const pct = ((db + 60) / 60) * 100;
+                levelFill.style.width = pct + '%';
+
+                if (db < -59) {
+                    levelVal.textContent = '-∞ dB';
+                } else {
+                    levelVal.textContent = db.toFixed(1) + ' dB';
+                }
+            }
+
+            drawLevel();
+        }
+
+        function stopLevelMeter() {
+            if (levelAnimFrame) {
+                cancelAnimationFrame(levelAnimFrame);
+                levelAnimFrame = null;
+            }
+            const levelFill = document.getElementById('levelFill');
+            const levelVal = document.getElementById('levelVal');
+            if (levelFill) levelFill.style.width = '0%';
+            if (levelVal) levelVal.textContent = '-∞ dB';
+        }
+
         // === START FUNCTION ===
         function startAM() {
             let carrierFreq = parseFloat(document.getElementById('carrierFreq').value);
@@ -595,11 +698,18 @@
             modulator1.connect(depthNode);
             depthNode.connect(gainNode.gain);
             carrier.connect(gainNode);
-            gainNode.connect(audioContext.destination);
+
+            // Analyser for level meter
+            if (!analyserNode) {
+                analyserNode = audioContext.createAnalyser();
+                analyserNode.fftSize = 2048;
+            }
+            gainNode.connect(analyserNode);
+            analyserNode.connect(audioContext.destination);
             
             // Track all oscillators for stopping
             let oscillators = [carrier, modulator1, modulator2];
-            
+
             let harmonic2 = null;
             let harmonic2Gain = null;
             
@@ -648,6 +758,9 @@
             
             // Store for stopping
             activeOscillators.push(...oscillators);
+
+            // Start level meter
+            updateLevelMeter();
             
             let stopTime = when + duration;
             for (let osc of oscillators) {
