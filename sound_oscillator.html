@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>A3d Oscillator v0.1.3</title>
+    <title>A3d Oscillator</title>
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -270,6 +270,13 @@
                 <input type="text" id="durationInput" value="5">
                 <span class="value" id="durationVal">5.0 sec</span>
             </div>
+
+            <div class="control-group">
+                <label id="lblVolume">Volume</label>
+                <input type="range" id="masterVolume" min="0" max="100" value="50" step="1">
+                <input type="text" id="masterVolumeInput" value="50">
+                <span class="value" id="masterVolumeVal">50%</span>
+            </div>
             
             <div class="harmonics">
                 <div class="h-group">
@@ -296,12 +303,12 @@
         
         <div class="output" id="output">Ready</div>
         <div class="status" id="status">Waiting</div>
-        <div class="version">A3d Oscillator v0.1.3</div>
+        <div class="version">A3d Oscillator v0.1.4</div>
     </div>
 
     <script>
         // === CONSTANTS ===
-        const VERSION = '0.1.3';
+        const VERSION = '0.1.4';
         const NAME = 'A3d Oscillator';
         const CONFIG = {
             DEFAULT_CARRIER: 300,
@@ -312,6 +319,7 @@
             DEFAULT_HARMONIC2_GAIN: 3,
             DEFAULT_HARMONIC3_GAIN: 2,
             DEFAULT_DURATION: 3,
+            DEFAULT_VOLUME: 50,
             MIN_CARRIER: 20,
             MAX_CARRIER: 18000,
             MIN_MOD: 0.1,
@@ -328,6 +336,7 @@
                 depth: 'AM depth',
                 fmDepth: 'FM depth (Hz)',
                 duration: 'Duration (sec)',
+                volume: 'Volume',
                 harm2: 'Harmonics: 2nd',
                 harm3: '3rd',
                 btn: 'Start modulation',
@@ -342,7 +351,8 @@
                 fmOut: 'OSC-2 (FM): %s Hz, depth %s Hz',
                 durationOut: 'Duration: %s sec',
                 harmonicsOut: 'Harmonics: %s',
-                noHarmonics: 'none'
+                noHarmonics: 'none',
+                volumeOut: 'Volume: %s%%'
             },
             rus: {
                 title: 'A3d Oscillator',
@@ -352,6 +362,7 @@
                 depth: 'Глубина AM',
                 fmDepth: 'Глубина FM (Гц)',
                 duration: 'Длительность (сек)',
+                volume: 'Громкость',
                 harm2: 'Гармоники: 2-я',
                 harm3: '3-я',
                 btn: 'Старт модуляции',
@@ -366,7 +377,8 @@
                 fmOut: 'ОСЦ-2 (FM): %s Гц, глубина %s Гц',
                 durationOut: 'Длительность: %s сек',
                 harmonicsOut: 'Гармоники: %s',
-                noHarmonics: 'нет'
+                noHarmonics: 'нет',
+                volumeOut: 'Громкость: %s%%'
             }
         };
 
@@ -395,6 +407,7 @@
             document.getElementById('lblDepth').textContent = t('depth');
             document.getElementById('lblFmDepth').textContent = t('fmDepth');
             document.getElementById('lblDuration').textContent = t('duration');
+            document.getElementById('lblVolume').textContent = t('volume');
             document.getElementById('lblHarm2').textContent = t('harm2');
             document.getElementById('lblHarm3').textContent = t('harm3');
             document.getElementById('btnStart').textContent = t('btn');
@@ -412,14 +425,12 @@
         // === STOP ALL SOUNDS ===
         function stopAllSounds() {
             if (audioContext && audioContext.state === 'running') {
-                // Close all active oscillators
                 for (let osc of activeOscillators) {
                     try { osc.stop(); } catch(e) {}
                     try { osc.disconnect(); } catch(e) {}
                 }
                 activeOscillators = [];
                 
-                // Close and recreate audio context
                 audioContext.close();
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 
@@ -462,6 +473,10 @@
         setDefault('duration', CONFIG.DEFAULT_DURATION);
         setDefault('durationInput', CONFIG.DEFAULT_DURATION);
         document.getElementById('durationVal').textContent = CONFIG.DEFAULT_DURATION.toFixed(1) + ' sec';
+
+        setDefault('masterVolume', CONFIG.DEFAULT_VOLUME);
+        setDefault('masterVolumeInput', CONFIG.DEFAULT_VOLUME);
+        document.getElementById('masterVolumeVal').textContent = CONFIG.DEFAULT_VOLUME + '%';
 
         setDefault('harmonics2Gain', CONFIG.DEFAULT_HARMONIC2_GAIN);
         setDefault('harmonics2GainInput', CONFIG.DEFAULT_HARMONIC2_GAIN);
@@ -531,6 +546,7 @@
         setupSlider('depth', 'depthInput', 'depthVal');
         setupSlider('fmDepth', 'fmDepthInput', 'fmDepthVal');
         setupSlider('duration', 'durationInput', 'durationVal');
+        setupSliderPercent('masterVolume', 'masterVolumeInput', 'masterVolumeVal');
         setupSliderPercent('harmonics2Gain', 'harmonics2GainInput', 'harmonics2GainVal');
         setupSliderPercent('harmonics3Gain', 'harmonics3GainInput', 'harmonics3GainVal');
 
@@ -542,6 +558,7 @@
             let depthAM = parseFloat(document.getElementById('depth').value) / 100;
             let fmDepth = parseFloat(document.getElementById('fmDepth').value);
             let duration = parseFloat(document.getElementById('duration').value);
+            let masterVolume = parseFloat(document.getElementById('masterVolume').value) / 100;
             let h2On = document.getElementById('harmonics2Check').checked;
             let h3On = document.getElementById('harmonics3Check').checked;
             let h2Gain = parseFloat(document.getElementById('harmonics2Gain').value) / 100;
@@ -561,16 +578,19 @@
             let modulator2 = audioContext.createOscillator();
             modulator2.frequency.value = modFreq2;
             
+            // --- MASTER VOLUME: УМНОЖАЕМ ВСЁ ---
+            // FM depth умножаем на громкость
             let fmGain = audioContext.createGain();
-            fmGain.gain.value = fmDepth;
+            fmGain.gain.value = fmDepth * masterVolume;
             modulator2.connect(fmGain);
             fmGain.connect(carrier.frequency);
             
+            // AM depth умножаем на громкость
             let gainNode = audioContext.createGain();
-            gainNode.gain.value = 0.5;
+            gainNode.gain.value = 0.5 * masterVolume;
             
             let depthNode = audioContext.createGain();
-            depthNode.gain.value = depthAM * 0.5;
+            depthNode.gain.value = depthAM * 0.5 * masterVolume;
             
             modulator1.connect(depthNode);
             depthNode.connect(gainNode.gain);
@@ -589,10 +609,11 @@
                 oscillators.push(harmonic2);
                 
                 harmonic2Gain = audioContext.createGain();
-                harmonic2Gain.gain.value = h2Gain;
+                // Громкость гармоники тоже умножаем на masterVolume
+                harmonic2Gain.gain.value = h2Gain * masterVolume;
                 
                 let fmGainH2 = audioContext.createGain();
-                fmGainH2.gain.value = fmDepth;
+                fmGainH2.gain.value = fmDepth * masterVolume;
                 modulator2.connect(fmGainH2);
                 fmGainH2.connect(harmonic2.frequency);
                 
@@ -609,10 +630,10 @@
                 oscillators.push(harmonic3);
                 
                 harmonic3Gain = audioContext.createGain();
-                harmonic3Gain.gain.value = h3Gain;
+                harmonic3Gain.gain.value = h3Gain * masterVolume;
                 
                 let fmGainH3 = audioContext.createGain();
-                fmGainH3.gain.value = fmDepth;
+                fmGainH3.gain.value = fmDepth * masterVolume;
                 modulator2.connect(fmGainH3);
                 fmGainH3.connect(harmonic3.frequency);
                 
@@ -650,6 +671,7 @@
                 t('amOut').replace('%s', modFreq1).replace('%s', (depthAM * 100).toFixed(0)) + '\n' +
                 t('fmOut').replace('%s', modFreq2).replace('%s', fmDepth) + '\n' +
                 t('durationOut').replace('%s', duration) + '\n' +
+                t('volumeOut').replace('%s', (masterVolume * 100).toFixed(0)) + '\n' +
                 t('harmonicsOut').replace('%s', harmonicsText) + '\n' +
                 '------------------------------------';
             
