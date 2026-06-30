@@ -10,6 +10,25 @@
             max-width: 820px;
             margin: 3 auto;
         }
+
+        a {
+        color:  #ffd700;
+        text-decoration: none;  
+        }
+
+        a:visited {
+        color: #dd8822;
+        }
+
+        a:hover {
+        color:  #ffeebb;
+        text-decoration: underline;
+        }
+
+        a:active {
+        color: #ee9933;
+        }
+        
         .container {
             background: #3d3228;
             padding: 12px;
@@ -178,6 +197,12 @@
             text-align: center;
             font-size: 12px;
         }
+        .control-group input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: #ee9933;
+            cursor: pointer;
+        }        
         .control-group .value {
             min-width: 30px;
             text-align: right;
@@ -339,7 +364,7 @@
             background: #352a21;
             padding: 4px 15px;
             border-radius: 4px;
-            margin: 8px 0;
+            margin: 2px 0px;
         }
         .level-meter-container > label {
             font-weight: bold;
@@ -482,15 +507,13 @@
             font-size: 16px;
         }
 
-        /* Правый блок: сдвигаем вправо и центрируем элементы внутри по вертикали (Align right block to the right) */
         .header-right {
             display: flex;
             justify-content: flex-end;
             align-items: center;
-            gap: 15px; /* Отступ между картинкой и переключателем языка */
+            gap: 15px;
         }
 
-        /* Стили для бейджика (Badge styles) */
         .views-badge {
             height: 1em;
             opacity: 0.6;
@@ -521,7 +544,7 @@
                 </span>
             </div>            
             <!-- Центр: Заголовок (Center: Title) -->
-            <h3 id="title">a3d Oscillator</h3>
+            <h3 id="title"><a href="https://antony3d.github.io/a3d-sound-oscillator">a3d Oscillator</a></h3>
             <!-- Правая часть: Счетчик и язык (Right side: Badge and Language switch) -->
             <div class="header-right">
                 <img class="views-badge" src="https://vbr.nathanchung.dev/badge?page_id=antonio3d-modulator&style=flat-square&text=·%20&color=3d3228&lcolor=3d3228">
@@ -607,16 +630,18 @@
             <div class="control-group">
                 <label>Time</label>
                 <div class="time-sliders">
-                    <input type="range" id="envTime1" min="0.1" max="99.8" step="0.1" value="0.1">
-                    <input type="range" id="envTime2" min="0.1" max="99.8" step="0.1" value="60.0">
-                    <input type="range" id="envTime3" min="0.1" max="99.8" step="0.1" value="99.5">
+                    <input type="range" id="envTime1" min="0.1" max="99.6" step="0.1" value="0.1">
+                    <input type="range" id="envTime2" min="0.2" max="99.7" step="0.1" value="40.0">
+                    <input type="range" id="envTime3" min="0.3" max="99.8" step="0.1" value="60.0">
+                    <input type="range" id="envTime4" min="0.4" max="99.9" step="0.1" value="99.9">
                 </div>
             </div>
             
             <div class="env-time-inputs">
                 <input type="text" id="envTimeIn1" value="0.1%">
-                <input type="text" id="envTimeIn2" value="60%">
-                <input type="text" id="envTimeIn3" value="99.5%">
+                <input type="text" id="envTimeIn2" value="40%">                
+                <input type="text" id="envTimeIn3" value="60%">
+                <input type="text" id="envTimeIn4" value="99.9%">
             </div>
 
             <div class="canvas-container">
@@ -626,13 +651,17 @@
             <div class="env-amp-row">
                 <label>Envelope</label>
                 <input type="text" id="envAmp0" value="0%">
-                <input type="text" id="envAmp1" value="80%">
-                <input type="text" id="envAmp2" value="95%">
-                <input type="text" id="envAmp3" value="40%">
-                <input type="text" id="envAmp4" value="0%">
+                <input type="text" id="envAmp1" value="70%">
+                <input type="text" id="envAmp2" value="80%">                
+                <input type="text" id="envAmp3" value="95%">
+                <input type="text" id="envAmp4" value="50%">
+                <input type="text" id="envAmp5" value="0%">
             </div>
         </div>
-        
+        <div class="button-row">
+            <button id="btnStart" class="btn-start" onclick="startAM()">Start modulation</button>
+            <button id="btnStop" class="btn-stop" onclick="stopAllSounds()">Stop all sounds</button>
+        </div>
         <div class="level-meter-container">
             <label id="lblLevel">Level</label>
             <div class="level-meter-bar">
@@ -640,11 +669,6 @@
             </div>
             <span class="value" id="levelVal">-∞ dB</span>
         </div>
-
-        <div class="button-row">
-            <button id="btnStart" class="btn-start" onclick="startAM()">Start modulation</button>
-            <button id="btnStop" class="btn-stop" onclick="stopAllSounds()">Stop all sounds</button>
-        </div>        
         <div class="output" id="output">Ready</div>
         <div class="status" id="status">Waiting</div>
     </div>
@@ -652,8 +676,9 @@
 
     <script>
         // === CONSTANTS ===
-        const VERSION = '0.2.1';
+        const VERSION = '0.2.2';
         const NAME = 'a3d Oscillator';
+        document.title = `${NAME} v${VERSION}`;        
         
         // === PRESETS ===
         const PRESET_NAMES = ['Default', 'Frogs', 'Helicopter', 'Alien', 'Drone'];
@@ -756,7 +781,6 @@
         // === LANGUAGE STRINGS ===
         const LANG = {
             eng: {
-                title: 'a3d Oscillator',
                 carrier: 'Carrier freq (Hz)',
                 mod1: 'OSC-1 (AM) Hz',
                 mod2: 'OSC-2 (FM) Hz',
@@ -783,7 +807,6 @@
                 envelope: 'Envelope'
             },
             rus: {
-                title: 'a3d Oscillator',
                 carrier: 'Частота (Гц)',
                 mod1: 'ОСЦ-1 (AM) Гц',
                 mod2: 'ОСЦ-2 (FM) Гц',
@@ -823,9 +846,10 @@
         // Хранит 5 точек. X = время в %, Y = амплитуда в %
         let AMP_Envelope = [
             { x: 0, y: 0 },
-            { x: 0.1, y: 80 },
+            { x: 0.1, y: 70 },
+            { x: 40.0, y: 80 },            
             { x: 60.0, y: 95 },
-            { x: 99.5, y: 40 },
+            { x: 99.9, y: 50 },
             { x: 100, y: 0 }
         ];
 
@@ -885,20 +909,24 @@
             let t1 = parseFloat(document.getElementById('envTime1').value);
             let t2 = parseFloat(document.getElementById('envTime2').value);
             let t3 = parseFloat(document.getElementById('envTime3').value);
+            let t4 = parseFloat(document.getElementById('envTime4').value);            
 
             // Защита от перехлеста: точки не должны обгонять друг друга
             if (t1 > t2) { t1 = t2; document.getElementById('envTime1').value = t1; }
             if (t2 > t3) { t2 = t3; document.getElementById('envTime2').value = t2; }
+            if (t3 > t4) { t3 = t4; document.getElementById('envTime2').value = t3; }
 
             // Обновляем текстовые поля с добавлением символа %
             document.getElementById('envTimeIn1').value = t1 + '%';
             document.getElementById('envTimeIn2').value = t2 + '%';
             document.getElementById('envTimeIn3').value = t3 + '%';
+            document.getElementById('envTimeIn4').value = t4 + '%';            
 
             // Обновляем координаты X в нашем массиве
             AMP_Envelope[1].x = t1;
             AMP_Envelope[2].x = t2;
             AMP_Envelope[3].x = t3;
+            AMP_Envelope[4].x = t4;            
 
             // Читаем амплитуды из нижних инпутов (Read amplitude inputs)
             for (let i = 0; i < 5; i++) {
@@ -917,18 +945,18 @@
 
         // Привязываем слушатели событий к ползункам и полям ввода
         document.addEventListener('DOMContentLoaded', () => {
-            ['envTime1', 'envTime2', 'envTime3'].forEach(id => {
+            ['envTime1', 'envTime2', 'envTime3', 'envTime4'].forEach(id => {
                 let el = document.getElementById(id);
                 if(el) el.addEventListener('input', updateEnvelopeData);
             });
             
-            ['envAmp0', 'envAmp1', 'envAmp2', 'envAmp3', 'envAmp4'].forEach(id => {
+            ['envAmp0', 'envAmp1', 'envAmp2', 'envAmp3', 'envAmp4', 'envAmp5'].forEach(id => {
                 let el = document.getElementById(id);
                 if(el) el.addEventListener('change', updateEnvelopeData);
             });
 
             // Слушатели для текстовых полей времени (Time text inputs)
-            ['envTimeIn1', 'envTimeIn2', 'envTimeIn3'].forEach((id, i) => {
+            ['envTimeIn1', 'envTimeIn2', 'envTimeIn3', 'envTimeIn4'].forEach((id, i) => {
                 let el = document.getElementById(id);
                 if (el) el.addEventListener('change', function() {
                     let val = parseFloat(this.value.replace('%', ''));
@@ -1049,7 +1077,6 @@
         }
 
         function updateLabels() {
-            document.getElementById('title').textContent = t('title');
             document.getElementById('lblCarrier').textContent = t('carrier');
             document.getElementById('lblMod1').textContent = t('mod1');
             document.getElementById('lblMod2').textContent = t('mod2');
