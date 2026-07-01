@@ -1462,7 +1462,21 @@ function exportCode() {
 
     let playFuncStr = playSound.toString().replace(/\s*updateLevelMeter\(\);\s*/g, '');
 
-    let paramsStr = JSON.stringify(params, null, 4);    
+    let envStr = JSON.stringify(params.envelope);
+    let paramsStr = `{
+            "carrierFreq": ${params.carrierFreq},
+            "modFreq1": ${params.modFreq1},
+            "modFreq2": ${params.modFreq2},
+            "depthAM": ${params.depthAM},
+            "fmDepth": ${params.fmDepth},
+            "duration": ${params.duration},
+            "masterVolume": ${params.masterVolume},
+            "h2On": ${params.h2On},
+            "h2Gain": ${params.h2Gain},
+            "h3On": ${params.h3On},
+            "h3Gain": ${params.h3Gain},
+            "envelope": ${envStr}
+            }`;  
 
     const now = new Date();
     const dateCr = now.toISOString().split('T')[0];
