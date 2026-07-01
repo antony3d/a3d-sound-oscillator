@@ -1397,15 +1397,17 @@
             let harmonicsText = [h2Text, h3Text].filter(s => s).join(', ') || t('noHarmonics');
             
             let output = document.getElementById('output');
+
+            let envText = AMP_Envelope.map((p, i) => `${i + 1}. ${(p.x / 100 * duration).toFixed(3)}s-${p.y.toFixed(1)}%`).join(' ');
+
             output.textContent = 
-                '------------------------------------\n' +
-                t('carrierOut').replace('%s', carrierFreq) + '\n' +
-                t('amOut').replace('%s', modFreq1).replace('%s', (depthAM * 100).toFixed(0)) + '\n' +
-                t('fmOut').replace('%s', modFreq2).replace('%s', fmDepth) + '\n' +
-                t('durationOut').replace('%s', duration) + '\n' +
-                t('volumeOut').replace('%s', (masterVolume * 100).toFixed(0)) + '\n' +
-                t('harmonicsOut').replace('%s', harmonicsText) + '\n' +
-                '------------------------------------';
+`Carrier: ${carrierFreq} Hz
+OSC-1 (AM): ${modFreq1} Hz, depth ${(depthAM * 100).toFixed(0)}%
+OSC-2 (FM): ${modFreq2} Hz, depth ${fmDepth} Hz
+Duration: ${duration} sec
+Volume: ${(masterVolume * 100).toFixed(0)}%
+Harmonics: ${harmonicsText}
+Envelope: ${envText}`.trim();
             
             document.getElementById('status').textContent = t('running').replace('%s', duration);
             
