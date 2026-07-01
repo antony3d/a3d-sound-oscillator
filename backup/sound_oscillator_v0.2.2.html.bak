@@ -282,13 +282,12 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-
         .button-row button:hover {
+            transform: scale(1.0);
         }
-
         .button-row button:active {
+            transform: scale(1.);
         }
-
         .btn-start {
             background: linear-gradient(135deg, #d08020, #b06000);
 /*            color: #3d3238; */
@@ -309,25 +308,6 @@
             background: linear-gradient(135deg, #dd4433, #aa2211);
 
         }
-
-        .btn-export {
-            background: linear-gradient(135deg, #ab5400, #cd6511);
-            color: white;
-        }
-        .btn-export:hover {
-            background: linear-gradient(135deg, #ffbb44, #de7611);
-        }
-        #saveLink {
-            color: #ffd700;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 13px;
-            cursor: pointer;
-        }
-        #saveLink:hover {
-            text-decoration: underline;
-        }
-
         .output {
             background: #10200e;
             border: 1px solid #5a4a3e;
@@ -681,10 +661,7 @@
         <div class="button-row">
             <button id="btnStart" class="btn-start" onclick="startAM()">Start modulation</button>
             <button id="btnStop" class="btn-stop" onclick="stopAllSounds()">Stop all sounds</button>
-            <button id="btnExport" class="btn-export" onclick="exportCode()">Export JS code</button>
         </div>
-
-
         <div class="level-meter-container">
             <label id="lblLevel">Level</label>
             <div class="level-meter-bar">
@@ -693,18 +670,13 @@
             <span class="value" id="levelVal">-∞ dB</span>
         </div>
         <div class="output" id="output">Ready</div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-            <div class="status" id="status" style="margin: 0;">Waiting</div>
-            <div id="saveBlock" style="display: none; margin-right: 10px;">
-                <a id="saveLink" href="#" download="a3d_oscillator_sound_01.html">Save As...</a>
-            </div>
-        </div>
+        <div class="status" id="status">Waiting</div>
     </div>
 </div>
 
     <script>
         // === CONSTANTS ===
-        const VERSION = '0.3.1';
+        const VERSION = '0.2.2';
         const NAME = 'a3d Oscillator';
         document.title = `${NAME} v${VERSION}`;        
         
@@ -1276,26 +1248,25 @@
         document.getElementById('harmonics2Check').addEventListener('change', saveCurrentPreset);
         document.getElementById('harmonics3Check').addEventListener('change', saveCurrentPreset);
 
-        function playSound(params) {
+        // === START FUNCTION ===
+        function startAM() {
             initAudio();
             
-            const {
-                carrierFreq,
-                modFreq1,
-                modFreq2,
-                depthAM,
-                fmDepth,
-                duration,
-                masterVolume,
-                h2On,
-                h2Gain,
-                h3On,
-                h3Gain,
-                envelope = [{ x: 0, y: 100 }, { x: 100, y: 100 }]
-            } = params;
+            let carrierFreq = parseFloat(document.getElementById('carrierFreq').value);
+            let modFreq1 = parseFloat(document.getElementById('modFreq1').value);
+            let modFreq2 = parseFloat(document.getElementById('modFreq2').value);
+            let depthAM = parseFloat(document.getElementById('depth').value) / 100;
+            let fmDepth = parseFloat(document.getElementById('fmDepth').value);
+            let duration = parseFloat(document.getElementById('duration').value);
+            let masterVolume = parseFloat(document.getElementById('masterVolume').value) / 100;
+            let h2On = document.getElementById('harmonics2Check').checked;
+            let h3On = document.getElementById('harmonics3Check').checked;
+            let h2Gain = parseFloat(document.getElementById('harmonics2Gain').value) / 100;
+            let h3Gain = parseFloat(document.getElementById('harmonics3Gain').value) / 100;
             
             let when = audioContext.currentTime + 0.1;
             
+            // --- НЕСУЩАЯ (carrier) ---
             let carrier = audioContext.createOscillator();
             carrier.frequency.value = carrierFreq;
 
@@ -1305,11 +1276,13 @@
             let modulator2 = audioContext.createOscillator();
             modulator2.frequency.value = modFreq2;
 
+            // --- FM для несущей ---
             let fmGain = audioContext.createGain();
             fmGain.gain.value = fmDepth * masterVolume;
             modulator2.connect(fmGain);
             fmGain.connect(carrier.frequency);
 
+            // --- AM для несущей ---
             let gainNode = audioContext.createGain();
             gainNode.gain.value = 0.5 * masterVolume;
 
@@ -1320,51 +1293,74 @@
             depthNode.connect(gainNode.gain);
             carrier.connect(gainNode);
             
+            // --- НОВАЯ ОГИБАЮЩАЯ АМПЛИТУДЫ (AMPLITUDE ENVELOPE) ---
             let envelopeGain = audioContext.createGain();
+            
+            // Стартуем с нулевой амплитуды (Start from zero)
             envelopeGain.gain.setValueAtTime(0, when);
 
-            for (let i = 0; i < envelope.length; i++) {
-                let pointTime = when + (envelope[i].x / 100) * duration;
-                let pointAmp = envelope[i].y / 100;
+            // Проходим по массиву и планируем изменение громкости
+            for (let i = 0; i < AMP_Envelope.length; i++) {
+                // Вычисляем абсолютное время в секундах для этой точки
+                let pointTime = when + (AMP_Envelope[i].x / 100) * duration;
+                
+                // Вычисляем значение усиления (от 0.0 до 1.0)
+                let pointAmp = (AMP_Envelope[i].y / 100);
+                
+                // Web Audio API плавно изменит громкость к нужному времени
                 envelopeGain.gain.linearRampToValueAtTime(pointAmp, pointTime);
             }
 
+            // Подключаем сигнал: Carrier -> AM Mod -> Envelope -> Master
             gainNode.connect(envelopeGain);
             envelopeGain.connect(masterGain);
             let oscillators = [carrier, modulator1, modulator2];
 
+            // --- ВТОРАЯ ГАРМОНИКА ---
+            let harmonic2 = null;
+            let harmonic2Gain = null;
+
             if (h2On && h2Gain > 0) {
-                let harmonic2 = audioContext.createOscillator();
+                harmonic2 = audioContext.createOscillator();
                 harmonic2.frequency.value = carrierFreq * 2;
                 oscillators.push(harmonic2);
                 
-                let harmonic2Gain = audioContext.createGain();
+                harmonic2Gain = audioContext.createGain();
                 harmonic2Gain.gain.value = h2Gain * masterVolume;
                 
+                // --- FM ДЛЯ ГАРМОНИКИ (используем ТОТ ЖЕ modulator2) ---
                 let fmGainH2 = audioContext.createGain();
                 fmGainH2.gain.value = fmDepth * masterVolume;
                 modulator2.connect(fmGainH2);
                 fmGainH2.connect(harmonic2.frequency);
                 
+                // --- AM ДЛЯ ГАРМОНИКИ (используем ТОТ ЖЕ depthNode) ---
+                // Гармоника подключается к ТОМУ ЖЕ gainNode, что и несущая
                 harmonic2.connect(harmonic2Gain);
-                harmonic2Gain.connect(gainNode);
+                harmonic2Gain.connect(gainNode); // <- ИДЁТ В ТОТ ЖЕ AM
             }
 
+            // --- ТРЕТЬЯ ГАРМОНИКА ---
+            let harmonic3 = null;
+            let harmonic3Gain = null;
+
             if (h3On && h3Gain > 0) {
-                let harmonic3 = audioContext.createOscillator();
+                harmonic3 = audioContext.createOscillator();
                 harmonic3.frequency.value = carrierFreq * 3;
                 oscillators.push(harmonic3);
                 
-                let harmonic3Gain = audioContext.createGain();
+                harmonic3Gain = audioContext.createGain();
                 harmonic3Gain.gain.value = h3Gain * masterVolume;
                 
+                // --- FM ДЛЯ ГАРМОНИКИ ---
                 let fmGainH3 = audioContext.createGain();
                 fmGainH3.gain.value = fmDepth * masterVolume;
                 modulator2.connect(fmGainH3);
                 fmGainH3.connect(harmonic3.frequency);
                 
+                // --- AM ДЛЯ ГАРМОНИКИ ---
                 harmonic3.connect(harmonic3Gain);
-                harmonic3Gain.connect(gainNode);
+                harmonic3Gain.connect(gainNode); // <- ТОТ ЖЕ AM
             }
             
             for (let osc of oscillators) {
@@ -1395,120 +1391,30 @@
                     }
                 }
             }, duration * 1000 + 100);
-        }
-
-        function startAM() {
-            let params = {
-                carrierFreq: parseFloat(document.getElementById('carrierFreq').value),
-                modFreq1: parseFloat(document.getElementById('modFreq1').value),
-                modFreq2: parseFloat(document.getElementById('modFreq2').value),
-                depthAM: parseFloat(document.getElementById('depth').value) / 100,
-                fmDepth: parseFloat(document.getElementById('fmDepth').value),
-                duration: parseFloat(document.getElementById('duration').value),
-                masterVolume: parseFloat(document.getElementById('masterVolume').value) / 100,
-                h2On: document.getElementById('harmonics2Check').checked,
-                h2Gain: parseFloat(document.getElementById('harmonics2Gain').value) / 100,
-                h3On: document.getElementById('harmonics3Check').checked,
-                h3Gain: parseFloat(document.getElementById('harmonics3Gain').value) / 100
-            };
             
-            if (document.getElementById('envelopeCheck').checked) {
-                params.envelope = AMP_Envelope;
-            }
-            
-            playSound(params);
-            
-            let h2Text = params.h2On ? '2nd: ' + (params.carrierFreq*2).toFixed(0) + ' Hz (' + (params.h2Gain*100).toFixed(0) + '%)' : '';
-            let h3Text = params.h3On ? '3rd: ' + (params.carrierFreq*3).toFixed(0) + ' Hz (' + (params.h3Gain*100).toFixed(0) + '%)' : '';
+            let h2Text = h2On ? '2nd: ' + (carrierFreq*2).toFixed(0) + ' Hz (' + (h2Gain*100).toFixed(0) + '%)' : '';
+            let h3Text = h3On ? '3rd: ' + (carrierFreq*3).toFixed(0) + ' Hz (' + (h3Gain*100).toFixed(0) + '%)' : '';
             let harmonicsText = [h2Text, h3Text].filter(s => s).join(', ') || t('noHarmonics');
             
-            let envText = '';
-            if (params.envelope) {
-                envText = params.envelope.map((p, i) => `${i + 1}. ${(p.x / 100 * params.duration).toFixed(3)}s-${p.y.toFixed(1)}%`).join(' ');
-            }
-            
             let output = document.getElementById('output');
-            output.textContent =`
-Carrier: ${params.carrierFreq} Hz
-OSC-1 (AM): ${params.modFreq1} Hz, depth ${(params.depthAM * 100).toFixed(0)}%
-OSC-2 (FM): ${params.modFreq2} Hz, depth ${params.fmDepth} Hz
-Duration: ${params.duration} sec
-Volume: ${(params.masterVolume * 100).toFixed(0)}%
+
+            let envText = AMP_Envelope.map((p, i) => `${i + 1}. ${(p.x / 100 * duration).toFixed(3)}s-${p.y.toFixed(1)}%`).join(' ');
+
+            output.textContent = 
+`Carrier: ${carrierFreq} Hz
+OSC-1 (AM): ${modFreq1} Hz, depth ${(depthAM * 100).toFixed(0)}%
+OSC-2 (FM): ${modFreq2} Hz, depth ${fmDepth} Hz
+Duration: ${duration} sec
+Volume: ${(masterVolume * 100).toFixed(0)}%
 Harmonics: ${harmonicsText}
 Envelope: ${envText}`.trim();
             
-            document.getElementById('status').textContent = t('running').replace('%s', params.duration);
+            document.getElementById('status').textContent = t('running').replace('%s', duration);
             
             setTimeout(() => {
                 document.getElementById('status').textContent = t('done');
-            }, params.duration * 1000);
+            }, duration * 1000);
         }
-
-function exportCode() {
-    let params = {
-        carrierFreq: parseFloat(document.getElementById('carrierFreq').value),
-        modFreq1: parseFloat(document.getElementById('modFreq1').value),
-        modFreq2: parseFloat(document.getElementById('modFreq2').value),
-        depthAM: parseFloat(document.getElementById('depth').value) / 100,
-        fmDepth: parseFloat(document.getElementById('fmDepth').value),
-        duration: parseFloat(document.getElementById('duration').value),
-        masterVolume: parseFloat(document.getElementById('masterVolume').value) / 100,
-        h2On: document.getElementById('harmonics2Check').checked,
-        h2Gain: parseFloat(document.getElementById('harmonics2Gain').value) / 100,
-        h3On: document.getElementById('harmonics3Check').checked,
-        h3Gain: parseFloat(document.getElementById('harmonics3Gain').value) / 100,
-        envelope: document.getElementById('envelopeCheck').checked ? AMP_Envelope : [{ x: 0, y: 100 }, { x: 100, y: 100 }]
-    };
-
-    let playFuncStr = playSound.toString().replace(/\s*updateLevelMeter\(\);\s*/g, '');
-
-    let paramsStr = JSON.stringify(params, null, 4);    
-
-    const now = new Date();
-    const dateCr = now.toISOString().split('T')[0];
-    const timeCr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
-
-    let html = `<!DOCTYPE html>
-<html>
-<head><title>a3d Oscillator</title></head>
-<body style="background:#222; color:#fff; font-family:sans-serif; text-align:center; padding:50px;">
-    <button onclick="play()" style="padding:15px 30px; font-size:18px; cursor:pointer; background:#ee9933; color:#101010; border:none; border-radius:8px;">Play</button>
-    <br><br>
-    Sound generated - ${dateCr} - ${timeCr}
-
-    <script>
-        let audioContext, masterGain, analyserNode, activeOscillators = [], isPlaying = false, levelAnimFrame;
-        
-        function initAudio() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                masterGain = audioContext.createGain();
-                analyserNode = audioContext.createAnalyser();
-                masterGain.connect(analyserNode);
-                analyserNode.connect(audioContext.destination);
-            }
-        }
-
-        ${playFuncStr}
-
-        function play() {
-            initAudio();
-
-            const SND_PARAM01 = ${paramsStr};
-                    
-            playSound(SND_PARAM01);
-        }
-    <\/script>
-</body>
-</html>`;
-
-    document.getElementById('output').textContent = html;
-    
-    let blob = new Blob([html], { type: 'text/html' });
-    let link = document.getElementById('saveLink');
-    link.href = URL.createObjectURL(blob);
-    document.getElementById('saveBlock').style.display = 'block';
-}
     </script>
 </body>
 </html>
