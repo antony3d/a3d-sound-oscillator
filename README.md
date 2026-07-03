@@ -16,9 +16,9 @@
 
 ### How to Use
 1. Tweak the parameters (Carrier, Modulators, Envelope) to design your sound.
-2. Click **Start modulation** to preview the result in the browser.
-3. Click **Export JS code** to generate the standalone player script.
-4. Click **Save to file** to download the `.html` file and integrate it into your project.
+2. **Start modulation** to preview the result in the browser.
+3. **Export JS code** to generate the standalone player script.
+4. **Save to file** to download the `.html` file and integrate it into your project.
 
 ---
 
@@ -34,6 +34,6 @@
 
 ### Как пользоваться
 1. Настройте параметры (Несущая, Модуляторы, Огибающая) для создания звука.
-2. Нажмите **Start modulation**, чтобы прослушать результат в браузере.
-3. Нажмите **Export JS code**, чтобы сгенерировать автономный скрипт плеера.
-4. Нажмите **Save to file**, чтобы скачать `.html` файл и интегрировать его в свой проект.
+2. **Start modulation**, чтобы прослушать результат в браузере.
+3. **Export JS code**, чтобы сгенерировать автономный скрипт плеера.
+4. **Save to file**, чтобы скачать `.html` файл и интегрировать его в свой проект.
