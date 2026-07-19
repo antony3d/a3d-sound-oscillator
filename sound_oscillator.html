@@ -589,6 +589,9 @@
                 <span class="preset-btn-wrapper">
                     <button class="preset-btn" data-preset="4" onclick="switchPreset(4)">⑤<span class="tooltip">Drone</span></button>
                 </span>
+                <span class="preset-btn-wrapper">
+                    <button class="preset-btn" data-preset="5" onclick="switchPreset(5)">⑥<span class="tooltip">Motor</span></button>
+                </span>
             </div>
             <!-- Центр: Заголовок (Center: Title) -->
             <h3 id="title"><a href="https://antony3d.github.io/a3d-sound-oscillator">a3d Oscillator</a></h3>
@@ -753,7 +756,7 @@
         document.title = `${NAME} v${VERSION}`;
 
         // === PRESETS ===
-        const PRESET_NAMES = ['Default', 'Frogs', 'Helicopter', 'Alien', 'Drone'];
+        const PRESET_NAMES = ['Default', 'Frogs', 'Helicopter', 'Alien', 'Drone', 'Motor'];
 
         // Default preset values
         const DEFAULT_VALUES = {
@@ -776,21 +779,24 @@
         const PRESETS = [
             // 0: Default
             { ...DEFAULT_VALUES },
-            // 1: Frogs
+            // 2: Frogs
             {
-                carrier: 2000,
-                mod1: 40,
+                carrier: 900,
+                wave: 'sine',
+                mod1Wave: 'sin',
+                mod2Wave: 'square',
+                mod1: 39,
                 mod2: 38,
-                depth: 90,
-                fmDepth: 3200,
+                depth: 65,
+                fmDepth: 400,
                 duration: 4,
-                volume: 60,
+                volume: 40,
                 h2On: true,
-                h2Gain: 20,
+                h2Gain: 30,
                 h3On: true,
-                h3Gain: 10
+                h3Gain: 50
             },
-            // 2: Helicopter
+            // 3: Helicopter
             {
                 carrier: 110,
                 mod1: 15,
@@ -804,7 +810,7 @@
                 h3On: true,
                 h3Gain: 14
             },
-            // 3: Alien / Sci-Fi
+            // 4: Alien / Sci-Fi
             {
                 carrier: 1100,
                 mod1: 1,
@@ -818,7 +824,7 @@
                 h3On: true,
                 h3Gain: 30
             },
-            // 4: Deep drone
+            // 5: Deep drone
             {
                 carrier: 70,
                 mod1: 0.4,
@@ -831,6 +837,23 @@
                 h2Gain: 60,
                 h3On: true,
                 h3Gain: 40
+            },
+            // 6: Motor
+            {
+                carrier: 50,
+                wave: 'square',
+                mod1Wave: 'sawtooth',
+                mod2Wave: 'sawtooth',
+                mod1: 20,
+                mod2: 40,
+                depth: 80,
+                fmDepth: 320,
+                duration: 3,
+                volume: 70,
+                h2On: true,
+                h2Gain: 80,
+                h3On: true,
+                h3Gain: 80
             }
         ];
 
@@ -872,9 +895,9 @@
                 running: 'Sound playing... stops in %s sec',
                 stopped: 'Stopped by user',
                 done: 'Done',
-                carrierOut: 'Carrier: %s Hz',
-                amOut: 'OSC-1 (AM): %s Hz, depth %s%',
-                fmOut: 'OSC-2 (FM): %s Hz, depth %s Hz',
+                carrierOut: 'Carrier: %s Hz, %s',
+                amOut: 'OSC-1 (AM): %s Hz, %s, depth %s%',
+                fmOut: 'OSC-2 (FM): %s Hz, %s, depth %s Hz',
                 durationOut: 'Duration: %s sec',
                 harmonicsOut: 'Harmonics: %s',
                 noHarmonics: 'none',
@@ -899,8 +922,8 @@
                 stopped: 'Остановлено пользователем',
                 done: 'Всё! Это конец...',
                 carrierOut: 'Несущая: %s Гц',
-                amOut: 'ОСЦ-1 (AM): %s Гц, глубина %s%',
-                fmOut: 'ОСЦ-2 (FM): %s Гц, глубина %s Гц',
+                amOut: 'ОСЦ-1 (AM): %s Гц, %s, глубина %s%',
+                fmOut: 'ОСЦ-2 (FM): %s Гц, %s, глубина %s Гц',
                 durationOut: 'Длительность: %s сек',
                 harmonicsOut: 'Гармоники: %s',
                 noHarmonics: 'нет',
@@ -1206,9 +1229,9 @@
         function getCurrentSettings() {
             return {
                 carrier: parseFloat(document.getElementById('carrierFreq').value),
-                wave: document.getElementById('carrierWave').value,
-                mod1Wave: document.getElementById('modWave1').value,
-                mod2Wave: document.getElementById('modWave2').value,
+                wave: document.getElementById('carrierWave').value, // Сохраняем тип волны несущей
+                mod1Wave: document.getElementById('modWave1').value, // Сохраняем волну OSC-1
+                mod2Wave: document.getElementById('modWave2').value, // Сохраняем волну OSC-2
                 mod1: parseFloat(document.getElementById('modFreq1').value),
                 mod2: parseFloat(document.getElementById('modFreq2').value),
                 depth: parseFloat(document.getElementById('depth').value),
@@ -1225,9 +1248,9 @@
         function applySettings(s) {
             document.getElementById('carrierFreq').value = s.carrier;
             document.getElementById('carrierFreqInput').value = s.carrier;
-            document.getElementById('carrierWave').value = s.wave || 'sine';
-            document.getElementById('modWave1').value = s.modWave1 || 'sine';
-            document.getElementById('modWave2').value = s.modWave2 || 'sine';
+            document.getElementById('carrierWave').value = s.wave || 'sine'; // Применяем волну несущей
+            document.getElementById('modWave1').value = s.mod1Wave || 'sine'; // Применяем волну OSC-1
+            document.getElementById('modWave2').value = s.mod2Wave || 'sine'; // Применяем волну OSC-2
             document.getElementById('modFreq1').value = s.mod1;
             document.getElementById('modFreq1Input').value = s.mod1;
             document.getElementById('modFreq2').value = s.mod2;
@@ -1637,9 +1660,9 @@
 
             let output = document.getElementById('output');
             output.textContent =`
-Carrier: ${params.carrierFreq} Hz
-OSC-1 (AM): ${params.modFreq1} Hz, depth ${(params.depthAM * 100).toFixed(0)}%
-OSC-2 (FM): ${params.modFreq2} Hz, depth ${params.fmDepth} Hz
+Carrier: ${params.carrierFreq} Hz, ${params.wave}
+OSC-1 (AM): ${params.modFreq1} Hz, ${params.mod1Wave}, depth ${(params.depthAM * 100).toFixed(0)}%
+OSC-2 (FM): ${params.modFreq2} Hz, ${params.mod2Wave}, depth ${params.fmDepth} Hz
 Duration: ${params.duration} sec
 Volume: ${(params.masterVolume * 100).toFixed(0)}%
 Harmonics: ${harmonicsText}
