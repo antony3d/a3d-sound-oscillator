@@ -9,6 +9,9 @@
             padding: 10px;
             max-width: 820px;
             margin: 3 auto;
+            color: #ee9933;
+            font-size: 13px;
+        }            
         }
 
         a {
@@ -133,6 +136,7 @@
             min-width: 110px;
             font-size: 13px;
         }
+
         .control-group-short {
             font-weight: bold;
             color: #ee9933;
@@ -495,8 +499,9 @@
         }
         canvas {
             width: 100%;
-            height: 100px;
+            min-height: 100px; /* минимальная высота */
             display: block;
+            cursor: default;
         }
 
         /* 
@@ -648,7 +653,6 @@
         <!-- Блок огибающей амплитуды (Amplitude Envelope Section) -->
         <div class="envelope-section">
             <div class="control-group">
-                <label>Time</label>
                 <div class="time-sliders">
                     <input type="range" id="envTime1" min="0.1" max="99.6" step="0.1" value="0.1">
                     <input type="range" id="envTime2" min="0.2" max="99.7" step="0.1" value="40.0">
@@ -657,11 +661,14 @@
                 </div>
             </div>
             
-            <div class="env-time-inputs">
+            <div class="env-amp-row">
+                <label>Time</label>
+                <input type="text" id="env0Fixed" value="0%" Readonly style="opacity: 0.5;">
                 <input type="text" id="envTimeIn1" value="0.1%">
                 <input type="text" id="envTimeIn2" value="40%">                
                 <input type="text" id="envTimeIn3" value="60%">
                 <input type="text" id="envTimeIn4" value="99.9%">
+                <input type="text" id="env6Fixed" value="100%" Readonly style="opacity: 0.5;">
             </div>
 
             <div class="canvas-container">
@@ -875,13 +882,20 @@
         let AMP_Envelope = [
             { x: 0, y: 0 },
             { x: 0.1, y: 70 },
-            { x: 40.0, y: 80 },            
+            { x: 40.0, y: 80 },
             { x: 60.0, y: 95 },
             { x: 99.9, y: 50 },
             { x: 100, y: 0 }
         ];
 
-        // === ИНИЦИАЛИЗАЦИЯ И ОТРИСОВКА (CANVAS DRAWING) ===
+        // === Drag state for envelope points (canvas mouse interaction) ===
+        let draggingPoint = -1;    // index of point being dragged, or -1
+        let hoveredPoint = -1;     // index of point under cursor, or -1
+
+        // === CONSTANTS ===
+        const POINT_RADIUS = 4;       // radius of draggable envelope points in px
+        const HIT_RADIUS = 15;        // clickable hit area around each point
+
         function drawEnvelope() {
             const canvas = document.getElementById('envCanvas');
             if (!canvas) return;
@@ -889,45 +903,84 @@
             const w = canvas.width;
             const h = canvas.height;
 
-            // Очищаем холст (Clear canvas)
+            // Отступы чтобы точки не были на самом краю
+            const padX = 6;
+            const padY = 6;
+            const drawW = w - padX * 2;
+            const drawH = h - padY * 2;
+
             ctx.clearRect(0, 0, w, h);
 
-            // Рисуем сетку (Draw grid)
+            // Сетка
             ctx.strokeStyle = '#3d3228';
             ctx.lineWidth = 1;
             for(let i=1; i<10; i++) {
                 ctx.beginPath();
-                ctx.moveTo(w * (i/10), 0);
-                ctx.lineTo(w * (i/10), h);
+                ctx.moveTo(padX + drawW * (i/10), padY);
+                ctx.lineTo(padX + drawW * (i/10), h - padY);
                 ctx.stroke();
             }
 
-            // Рисуем кривую огибающей (Draw envelope path)
+            // Горизонтальная сетка (25%, 50%, 75%)
+            ctx.strokeStyle = '#3d3228';
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 3; i++) {
+                let py = (h - padY) - (i * 0.25 * drawH);
+                ctx.beginPath();
+                ctx.moveTo(padX, py);
+                ctx.lineTo(padX + drawW, py);
+                ctx.stroke();
+            }            
+
+            // Кривая
             ctx.beginPath();
             ctx.strokeStyle = '#ffd700';
             ctx.lineWidth = 2;
 
             for (let i = 0; i < AMP_Envelope.length; i++) {
-                // Переводим проценты в координаты пикселей
-                // Y инвертирован, так как 0 в canvas - это верхний край
-                let px = (AMP_Envelope[i].x / 100) * w;
-                let py = h - ((AMP_Envelope[i].y / 100) * h);
+                let px = padX + (AMP_Envelope[i].x / 100) * drawW;
+                let py = (h - padY) - ((AMP_Envelope[i].y / 100) * drawH);
 
                 if (i === 0) {
                     ctx.moveTo(px, py);
                 } else {
-                    // Используем линии для точного соответствия linearRampToValueAtTime
                     ctx.lineTo(px, py);
                 }
             }
             ctx.stroke();
 
-            // Рисуем маркеры точек (Draw points/markers)
-            ctx.fillStyle = '#eee';
+            // Маркеры точек
             for (let i = 0; i < AMP_Envelope.length; i++) {
-                let px = (AMP_Envelope[i].x / 100) * w;
-                let py = h - ((AMP_Envelope[i].y / 100) * h);
-                ctx.fillRect(px - 3, py - 3, 6, 6);
+                let px = padX + (AMP_Envelope[i].x / 100) * drawW;
+                let py = (h - padY) - ((AMP_Envelope[i].y / 100) * drawH);
+
+                if (i === draggingPoint) {
+                    let size = (POINT_RADIUS + 3) * 2;
+                    ctx.fillStyle = '#ffeebb';
+                    ctx.fillRect(px - POINT_RADIUS - 3, py - POINT_RADIUS - 3, size, size);
+                    ctx.strokeStyle = '#ffd700';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(px - POINT_RADIUS - 3, py - POINT_RADIUS - 3, size, size);
+                } else if (i === hoveredPoint) {
+                    let size = (POINT_RADIUS + 2) * 2;
+                    ctx.fillStyle = '#ffcc66';
+                    ctx.fillRect(px - POINT_RADIUS - 2, py - POINT_RADIUS - 2, size, size);
+                    ctx.strokeStyle = '#ee9933';
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(px - POINT_RADIUS - 2, py - POINT_RADIUS - 2, size, size);
+                } else {
+                    let size = POINT_RADIUS * 2;
+                    ctx.fillStyle = '#ee9933';
+                    ctx.fillRect(px - POINT_RADIUS, py - POINT_RADIUS, size, size);
+                    ctx.strokeStyle = '#cc7722';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(px - POINT_RADIUS, py - POINT_RADIUS, size, size);
+                }
+            }
+
+            const c = document.getElementById('envCanvas');
+            if (c) {
+                c.style.cursor = hoveredPoint >= 0 ? 'ns-resize' : 'default';
             }
         }
 
@@ -1007,6 +1060,106 @@
 
             // Первичная отрисовка
             setTimeout(drawEnvelope, 100);
+
+            // === Canvas mouse events for draggable envelope points ===
+            const envCanvas = document.getElementById('envCanvas');
+            if (envCanvas) {
+                function findPointIndex(mx, my) {
+                    const rect = envCanvas.getBoundingClientRect();
+                    const scaleX = envCanvas.width / rect.width;
+                    const scaleY = envCanvas.height / rect.height;
+                    const canvasX = (mx - rect.left) * scaleX;
+                    const canvasY = (my - rect.top) * scaleY;
+
+                    const padX = 10;
+                    const padY = 10;
+                    const drawW = envCanvas.width - padX * 2;
+                    const drawH = envCanvas.height - padY * 2;
+
+                    for (let i = 0; i < AMP_Envelope.length; i++) {
+                        let px = padX + (AMP_Envelope[i].x / 100) * drawW;
+                        let py = (envCanvas.height - padY) - ((AMP_Envelope[i].y / 100) * drawH);
+                        let dx = canvasX - px;
+                        let dy = canvasY - py;
+                        if (Math.sqrt(dx*dx + dy*dy) <= HIT_RADIUS) {
+                            return i;
+                        }
+                    }
+                    return -1;
+                }
+
+                // Mouse move на WINDOW чтобы работало за пределами canvas
+                window.addEventListener('mousemove', function(e) {
+                    if (draggingPoint >= 0) {
+                        const rect = envCanvas.getBoundingClientRect();
+                        const scaleX = envCanvas.width / rect.width;
+                        const scaleY = envCanvas.height / rect.height;
+                        let canvasX = (e.clientX - rect.left) * scaleX;
+                        let canvasY = (e.clientY - rect.top) * scaleY;
+                        
+                        const padX = 10;
+                        const padY = 10;
+                        const drawW = envCanvas.width - padX * 2;
+                        const drawH = envCanvas.height - padY * 2;
+                        
+                        let ampPercent = ((envCanvas.height - padY - canvasY) / drawH) * 100;
+                        ampPercent = Math.max(0, Math.min(100, Math.round(ampPercent)));
+                        AMP_Envelope[draggingPoint].y = ampPercent;
+                        document.getElementById('envAmp' + draggingPoint).value = ampPercent + '%';
+                        
+                        if (draggingPoint > 0 && draggingPoint < AMP_Envelope.length - 1) {
+                            let timePercent = ((canvasX - padX) / drawW) * 100;
+                            timePercent = Math.max(0.1, Math.min(99.9, timePercent));
+                            
+                            if (draggingPoint > 1 && timePercent < AMP_Envelope[draggingPoint - 1].x) {
+                                timePercent = AMP_Envelope[draggingPoint - 1].x;
+                            }
+                            if (draggingPoint < AMP_Envelope.length - 2 && timePercent > AMP_Envelope[draggingPoint + 1].x) {
+                                timePercent = AMP_Envelope[draggingPoint + 1].x;
+                            }
+                            
+                            AMP_Envelope[draggingPoint].x = timePercent;
+                            
+                            if (draggingPoint >= 1 && draggingPoint <= 4) {
+                                document.getElementById('envTime' + draggingPoint).value = timePercent;
+                                document.getElementById('envTimeIn' + draggingPoint).value = timePercent.toFixed(1) + '%';
+                            }
+                        }
+                        
+                        drawEnvelope();
+                    } else {
+                        let idx = findPointIndex(e.clientX, e.clientY);
+                        if (idx !== hoveredPoint) {
+                            hoveredPoint = idx;
+                            drawEnvelope();
+                        }
+                    }
+                });
+
+                envCanvas.addEventListener('mousedown', function(e) {
+                    let idx = findPointIndex(e.clientX, e.clientY);
+                    if (idx >= 0) {
+                        draggingPoint = idx;
+                        drawEnvelope();
+                    }
+                });
+
+                window.addEventListener('mouseup', function() {
+                    if (draggingPoint >= 0) {
+                        draggingPoint = -1;
+                        updateEnvelopeData();
+                        drawEnvelope();
+                    }
+                });
+
+                envCanvas.addEventListener('mouseleave', function() {
+                    if (hoveredPoint >= 0 && draggingPoint < 0) {
+                        hoveredPoint = -1;
+                        drawEnvelope();
+                    }
+                });
+            }
+
         });        
 
         // === GET/SET SETTINGS ===

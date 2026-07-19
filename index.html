@@ -30,9 +30,9 @@
         .container {
             background-color: #4a362d;
             border-radius: 12px;
-            padding: 30px;
-            width: 90%;
-            max-width: 600px;
+            padding: 25px;
+            width: 80%;
+            max-width: 450px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             text-align: center;
             border: 1px solid #5a4338;
@@ -128,10 +128,10 @@
     <div class="container">
         <!-- Заголовок-кнопка из твоего апдейта -->
         <a href="sound_oscillator.html" class="title-btn">Projects:</a>
-        
+
         <!-- Большая оранжевая кнопка запуска из твоего апдейта -->
         <a href="sound_oscillator.html" class="btn-launch">Launch A3d Oscillator Project</a>
-        
+
         <div class="status-box">
             <p class="status-text">Ready</p>
             <p class="status-text" style="color: #f39c12; margin-bottom: 0;">
@@ -160,7 +160,7 @@
 
         function drawWaves() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+
             // Настройки волн (3 разные синусоиды для красивого наложения)
             const waves = [
                 { amplitude: 50, frequency: 0.01, speed: 0.02, opacity: 0.12 },
