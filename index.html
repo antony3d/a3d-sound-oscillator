@@ -164,10 +164,12 @@
             // Настройки волн (3 разные синусоиды для красивого наложения)
             const waves = [
                 { amplitude: 50, frequency: 0.01, speed: 0.02, opacity: 0.12 },
-                { amplitude: 25, frequency: 0.01, speed: -0.015, opacity: 0.08 },
-                { amplitude: 70, frequency: 0.25, speed: 0.3, opacity: 0.05 }
+                { amplitude: 25, frequency: 0.025, speed: -0.015, opacity: 0.08 },
+                { amplitude: 70, frequency: 0.20, speed: 0.035, opacity: 0.05 }
             ];
 
+
+            let y = 1;
             waves.forEach(wave => {
                 ctx.beginPath();
                 ctx.lineWidth = 2;
@@ -176,7 +178,13 @@
 
                 for (let x = 0; x < canvas.width; x++) {
                     // Формула синусоиды сдвинутая по центру экрана по вертикали
-                    const y = canvas.height / 2 + Math.sin(x * wave.frequency + offset * wave.speed) * wave.amplitude;
+
+                    if (wave.frequency === 0.25) {
+                      y = canvas.height / 2 + Math.sin(x * wave.frequency  + offset * wave.speed * (offset / 1000)) * wave.amplitude;
+                    } else {
+                      y = canvas.height / 2 + Math.sin(x * wave.frequency + offset * wave.speed) * wave.amplitude;
+                    }
+
                     if (x === 0) {
                         ctx.moveTo(x, y);
                     } else {
